@@ -1,0 +1,51 @@
+@model MiSesionViewModel
+@{ ViewData["Title"] = "Mi sesión"; }
+<h1 class="h3 mb-4">Mi sesión</h1>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="caja h-100">
+            <h2 class="h5">Datos de la sesión</h2>
+            <p class="small text-secondary">Se guardan en el servidor y se borran tras 30 minutos sin actividad.</p>
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr><th scope="row">Nombre</th><td>@Model.Nombre</td></tr>
+                    <tr><th scope="row">Rol</th><td>@Model.Rol</td></tr>
+                    <tr><th scope="row">Inicio de sesión</th><td>@(Model.InicioSesion?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</td></tr>
+                    <tr><th scope="row">Páginas visitadas</th><td>@Model.PaginasVisitadas</td></tr>
+                    <tr><th scope="row">Id de sesión</th><td class="text-break small">@Model.IdSesion</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="caja h-100">
+            <h2 class="h5">Cookies</h2>
+            <p class="small text-secondary">Se guardan en el navegador.</p>
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr>
+                        <th scope="row">Recordarme</th>
+                        <td>
+                            @if (Model.CookiePersistente)
+                            {
+                                <span class="badge text-bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">No activo</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">La cookie expira</th>
+                        <td>@(Model.CookiePersistente && Model.ExpiraCookie.HasValue
+                                ? Model.ExpiraCookie.Value.ToString("dd/MM/yyyy HH:mm")
+                                : "Al cerrar el navegador")</td>
+                    </tr>
+                    <tr><th scope="row">Correo recordado</th><td>@(Model.CorreoRecordado ?? "Ninguno")</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
