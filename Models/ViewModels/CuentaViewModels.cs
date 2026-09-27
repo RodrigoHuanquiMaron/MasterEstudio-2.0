@@ -40,4 +40,14 @@ public class RegistroViewModel
     [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden.")]
     [Display(Name = "Confirmar contraseña")]
     public string ConfirmarPassword { get; set; } = string.Empty;
+}public class MiSesionViewModel
+{
+    public string Nombre { get; set; } = string.Empty;
+    public string Rol { get; set; } = string.Empty;
+    public DateTime? InicioSesion { get; set; }
+    public int PaginasVisitadas { get; set; }
+    public string IdSesion { get; set; } = string.Empty;
+    public bool CookiePersistente { get; set; }
+    public DateTime? ExpiraCookie { get; set; }
+    public string? CorreoRecordado { get; set; }
 }
