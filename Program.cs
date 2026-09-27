@@ -60,7 +60,11 @@ else
 {
     builder.Services.AddDistributedMemoryCache();
 }
-builder.Services.AddScoped<CacheService>();   // en la Parte 4 se cambia por Redis
+builder.Services.AddScoped<CacheService>();
+
+// PieHost: WebSocket en tiempo real
+builder.Services.Configure<PieHostOptions>(builder.Configuration.GetSection("PieHost"));
+builder.Services.AddHttpClient<PieHostService>(client => client.Timeout = TimeSpan.FromSeconds(10));   // en la Parte 4 se cambia por Redis
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = "MasterEstudio.Session";

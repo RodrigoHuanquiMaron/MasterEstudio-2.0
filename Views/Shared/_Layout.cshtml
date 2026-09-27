@@ -1,4 +1,8 @@
 ﻿@inject SignInManager<ApplicationUser> SignInManager
+@inject IOptions<PieHostOptions> PieHost
+@{
+    var tiempoReal = User.IsInRole("Usuario") && PieHost.Value.Configurado;
+}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -34,13 +38,19 @@
                         }
                     </ul>
                     <ul class="navbar-nav align-items-md-center">
+                        @if (tiempoReal)
+                        {
+                            <li class="nav-item me-3">
+                                <span id="estado-tiempo-real" class="badge text-bg-secondary" role="status">Conectando…</span>
+                            </li>
+                        }
                         @if (SignInManager.IsSignedIn(User))
                         {
                             <li class="nav-item">
                                 <a class="nav-link me-2" asp-controller="Cuenta" asp-action="MiSesion">
                                     @(Context.Session.GetString(SesionKeys.Nombre) ?? User.Identity?.Name)
                                 </a>
-                            </li>                            
+                            </li>
                             <li class="nav-item">
                                 <form asp-controller="Cuenta" asp-action="Logout" method="post">
                                     <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
@@ -70,9 +80,19 @@
         @RenderBody()
     </main>
 
+    @if (tiempoReal)
+    {
+        <div id="tiempo-real" data-url="@PieHost.Value.UrlWebSocket" hidden></div>
+        <div id="avisos-tiempo-real" class="avisos" aria-live="polite"></div>
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (tiempoReal)
+    {
+        <script src="~/js/tiempo-real.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

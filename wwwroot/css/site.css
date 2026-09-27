@@ -37,4 +37,11 @@ body { background: var(--fondo); color: #1d2a36; }
 .progress { height: .6rem; }
 .progress-bar { background: var(--acento); }
 
-:focus-visible { outline: 3px solid #e0a82e; outline-offset: 2px; }
+:focus-visible { outline: 3px solid #e0a82e; outline-offset: 2px; }/* Avisos en tiempo real (PieHost) */
+.avisos {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1080;
+    max-width: 22rem;
+}
