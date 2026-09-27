@@ -12,6 +12,10 @@ public static class SeedData
     public static async Task InicializarAsync(IServiceProvider services)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
+        var env = services.GetRequiredService<IHostEnvironment>();
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("SeedData");
+
+        // Crea o actualiza las tablas en PostgreSQL
         await db.Database.MigrateAsync();
 
         // 1. Roles
@@ -22,13 +26,25 @@ public static class SeedData
                 await roleManager.CreateAsync(new IdentityRole(rol));
         }
 
-        // 2. Administrador inicial (en la Parte 3 estos valores vendrán de variables de entorno)
+        // 2. Administrador inicial
+        //    En Render se definen las variables Admin__Email y Admin__Password.
+        //    Solo en desarrollo se usan valores por defecto.
         var config = services.GetRequiredService<IConfiguration>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var email = config["Admin:Email"] ?? "admin@cursos.com";
-        var password = config["Admin:Password"] ?? "Admin123";
+        var email = config["Admin:Email"];
+        var password = config["Admin:Password"];
 
-        if (await userManager.FindByEmailAsync(email) is null)
+        if (env.IsDevelopment())
+        {
+            email ??= "admin@cursos.com";
+            password ??= "Admin123";
+        }
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning("No se creó el administrador: define las variables Admin__Email y Admin__Password.");
+        }
+        else if (await userManager.FindByEmailAsync(email) is null)
         {
             var admin = new ApplicationUser
             {
@@ -39,7 +55,15 @@ public static class SeedData
             };
             var resultado = await userManager.CreateAsync(admin, password);
             if (resultado.Succeeded)
+            {
                 await userManager.AddToRoleAsync(admin, RolAdmin);
+                logger.LogInformation("Administrador creado: {Email}", email);
+            }
+            else
+            {
+                logger.LogError("No se pudo crear el administrador: {Errores}",
+                    string.Join(", ", resultado.Errors.Select(e => e.Description)));
+            }
         }
 
         // 3. Cursos de prueba

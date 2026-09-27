@@ -25,3 +25,23 @@ Se usa un modelo **híbrido**:
 ### Modelos de datos
 `ApplicationUser` (extiende IdentityUser), `Curso`, `Inscripcion` (usuario–curso con progreso)
 y `Donacion`.
+
+## Parte 3 — Base de datos PostgreSQL
+
+- Proveedor: Npgsql (EF Core) con migraciones `InicialPostgres`.
+- La app lee la conexión de la variable `DATABASE_URL` (formato `postgresql://...` de Render)
+  y la convierte en `Infrastructure/ConexionBD.cs`.
+- Las llaves de cifrado de cookies se guardan en la tabla `DataProtectionKeys`, así las
+  sesiones con "Recordarme" sobreviven a cada despliegue.
+- Las migraciones se aplican automáticamente al iniciar.
+
+### Variables de entorno (Render)
+
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL` | Internal Database URL de la base en Render |
+| `Admin__Email` | Correo del administrador inicial |
+| `Admin__Password` | Contraseña del administrador inicial |
+| `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` (Render usa un proxy HTTPS) |
+
+En desarrollo, `DATABASE_URL` se guarda con `dotnet user-secrets` (nunca en el repositorio).
