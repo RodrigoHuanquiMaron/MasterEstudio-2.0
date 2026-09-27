@@ -61,3 +61,22 @@ En desarrollo, `DATABASE_URL` se guarda con `dotnet user-secrets` (nunca en el r
 | Variable | Valor en Render |
 |---|---|
 | `REDIS_URL` | Internal Key Value URL (`redis://red-...:6379`) |
+## Parte 5 — Tiempo real con PieHost
+
+- Al agregar o eliminar un curso, el servidor: 1) guarda en PostgreSQL, 2) invalida Redis y
+  3) publica el evento `CursoActualizado` (id, acción, título) en PieHost mediante su API REST
+  (`Infrastructure/PieHostService.cs`). El secreto de PieHost nunca llega al navegador.
+- La página del usuario se conecta por WebSocket al canal `cursos` (`wwwroot/js/tiempo-real.js`).
+  Al recibir el evento muestra un aviso y actualiza el contenido sin recargar.
+- Al reconectar, la página vuelve a consultar el estado vigente.
+
+| Variable | Valor en Render |
+|---|---|
+| `PieHost__ClusterId` | Cluster ID de PieSocket |
+| `PieHost__ApiKey` | API Key |
+| `PieHost__ApiSecret` | API Secret |
+
+## Despliegue
+
+- URL pública: https://TU-SERVICIO.onrender.com
+- Commit desplegado: (se verifica en Render → Events)

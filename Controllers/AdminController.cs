@@ -15,12 +15,15 @@ public class AdminController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly CacheService _cache;
+    private readonly PieHostService _pieHost;
 
-    public AdminController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, CacheService cache)
+    public AdminController(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
+        CacheService cache, PieHostService pieHost)
     {
         _db = db;
         _userManager = userManager;
         _cache = cache;
+        _pieHost = pieHost;
     }
 
     // Resumen con caché de 60 s
@@ -102,8 +105,10 @@ public class AdminController : Controller
         if (!ModelState.IsValid) return View(curso);
 
         _db.Cursos.Add(curso);
-        await _db.SaveChangesAsync();          // 1. se guarda en PostgreSQL
-        await _cache.CursosCambiaronAsync();   // 2. se invalida la caché
+        await _db.SaveChangesAsync();                                                    // 1. PostgreSQL
+        await _cache.CursosCambiaronAsync();                                             // 2. Redis
+        await _pieHost.PublicarCursoActualizadoAsync(curso.Id, "Agregado", curso.Titulo); // 3. PieHost
+
         TempData["Mensaje"] = $"Curso \"{curso.Titulo}\" agregado.";
         return RedirectToAction(nameof(Cursos));
     }
@@ -115,9 +120,11 @@ public class AdminController : Controller
         var curso = await _db.Cursos.FindAsync(id);
         if (curso is null) return NotFound();
 
-        _db.Cursos.Remove(curso);              // sus inscripciones se borran en cascada
-        await _db.SaveChangesAsync();
-        await _cache.CursosCambiaronAsync();
+        _db.Cursos.Remove(curso);                                                        // sus inscripciones se borran en cascada
+        await _db.SaveChangesAsync();                                                    // 1. PostgreSQL
+        await _cache.CursosCambiaronAsync();                                             // 2. Redis
+        await _pieHost.PublicarCursoActualizadoAsync(id, "Eliminado", curso.Titulo);     // 3. PieHost
+
         TempData["Mensaje"] = $"Curso \"{curso.Titulo}\" eliminado.";
         return RedirectToAction(nameof(Cursos));
     }
