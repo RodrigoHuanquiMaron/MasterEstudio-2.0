@@ -1,0 +1,36 @@
+@model PanelUsuarioViewModel
+@{ ViewData["Title"] = "Panel principal"; }
+<h1 class="h3 mb-4">Hola, @Model.Nombre</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="caja dato"><div class="valor">@Model.CursosInscritos</div><div class="etiqueta">Cursos inscritos</div></div></div>
+    <div class="col-md-4"><div class="caja dato"><div class="valor">@Model.ProgresoPromedio %</div><div class="etiqueta">Progreso promedio</div></div></div>
+    <div class="col-md-4"><div class="caja dato"><div class="valor">S/ @Model.TotalDonado.ToString("N2")</div><div class="etiqueta">Total donado</div></div></div>
+</div>
+
+<h2 class="h5 mb-3">Cursos disponibles</h2>
+@if (!Model.CursosDisponibles.Any())
+{
+    <div class="caja text-secondary">Ya estás inscrito en todos los cursos. Revisa tu avance en <a asp-action="MisCursos">Mis cursos</a>.</div>
+}
+else
+{
+    <div class="row g-3" id="lista-cursos">
+        @foreach (var curso in Model.CursosDisponibles)
+        {
+            <div class="col-md-6 col-lg-4" data-curso-id="@curso.Id">
+                <div class="caja h-100 d-flex flex-column">
+                    <h3 class="h6 fw-semibold">@curso.Titulo</h3>
+                    <p class="text-secondary small flex-grow-1">@curso.Descripcion</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-secondary">@curso.Horas horas</span>
+                        <form asp-action="Inscribirse" method="post">
+                            <input type="hidden" name="cursoId" value="@curso.Id" />
+                            <button type="submit" class="btn btn-primary btn-sm">Inscribirme</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

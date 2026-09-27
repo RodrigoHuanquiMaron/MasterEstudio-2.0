@@ -1,0 +1,13 @@
+@model ResumenAdminViewModel
+@{ ViewData["Title"] = "Panel de administración"; }
+<h1 class="h3 mb-4">Panel de administración</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalUsuarios</div><div class="etiqueta">Usuarios</div></div></div>
+    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalCursos</div><div class="etiqueta">Cursos</div></div></div>
+    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalInscripciones</div><div class="etiqueta">Inscripciones</div></div></div>
+    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">S/ @Model.TotalDonado.ToString("N2")</div><div class="etiqueta">Donado</div></div></div>
+</div>
+
+<a class="btn btn-primary me-2" asp-action="CrearCurso">Agregar curso</a>
+<a class="btn btn-outline-secondary" asp-action="Usuarios">Revisar usuarios</a>

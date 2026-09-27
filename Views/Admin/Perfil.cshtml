@@ -1,0 +1,41 @@
+@model PerfilUsuarioViewModel
+@{ ViewData["Title"] = "Perfil de " + Model.Usuario.NombreCompleto; }
+<a asp-action="Usuarios" class="small">Volver a usuarios</a>
+<h1 class="h3 mt-2 mb-1">@Model.Usuario.NombreCompleto</h1>
+<p class="text-secondary">@Model.Usuario.Email · @Model.Rol · registrado el @Model.Usuario.FechaRegistro.ToLocalTime().ToString("dd/MM/yyyy")</p>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="caja">
+            <h2 class="h5">Cursos y desempeño</h2>
+            @if (!Model.Inscripciones.Any())
+            {
+                <p class="text-secondary mb-0">No está inscrito en ningún curso.</p>
+            }
+            else
+            {
+                @foreach (var i in Model.Inscripciones)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@i.Curso!.Titulo</span><span>@i.Progreso %</span></div>
+                        <div class="progress" role="progressbar" aria-valuenow="@i.Progreso" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso en @i.Curso.Titulo">
+                            <div class="progress-bar" style="width:@i.Progreso%"></div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="caja">
+            <h2 class="h5">Donaciones</h2>
+            <p class="mb-2">Total: S/ @Model.TotalDonado.ToString("N2")</p>
+            <ul class="list-unstyled small mb-0">
+                @foreach (var d in Model.Donaciones)
+                {
+                    <li class="py-1 border-bottom">@d.Fecha.ToLocalTime().ToString("dd/MM/yyyy") · S/ @d.Monto.ToString("N2")</li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
