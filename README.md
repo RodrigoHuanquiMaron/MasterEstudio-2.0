@@ -45,3 +45,19 @@ y `Donacion`.
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` (Render usa un proxy HTTPS) |
 
 En desarrollo, `DATABASE_URL` se guarda con `dotnet user-secrets` (nunca en el repositorio).
+
+
+## Parte 4 — Caché con Redis
+
+- Redis (Render Key Value) como `IDistributedCache`, configurado con la variable `REDIS_URL`.
+- Patrón cache-aside en `Infrastructure/CacheService.cs`, expiración de 60 segundos.
+- Datos en caché: catálogo de cursos, inscripciones y donaciones por usuario, y resumen del admin.
+- Invalidación: después de guardar en PostgreSQL se borran las claves afectadas.
+  Al agregar o eliminar un curso se cambia `cursos:version`, lo que invalida el catálogo y los
+  cursos de todos los usuarios a la vez.
+- Los logs muestran `CACHE HIT` (lectura desde Redis) o `CACHE MISS` (lectura desde PostgreSQL).
+- Las sesiones de la Parte 2 también se guardan en Redis.
+
+| Variable | Valor en Render |
+|---|---|
+| `REDIS_URL` | Internal Key Value URL (`redis://red-...:6379`) |
