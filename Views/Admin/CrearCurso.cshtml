@@ -1,0 +1,26 @@
+@model Curso
+@{ ViewData["Title"] = "Agregar curso"; }
+<div class="caja" style="max-width:640px">
+    <h1 class="h4 mb-4">Agregar curso</h1>
+    <form asp-action="CrearCurso" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+        <div class="mb-3">
+            <label asp-for="Titulo" class="form-label"></label>
+            <input asp-for="Titulo" class="form-control" />
+            <span asp-validation-for="Titulo" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Descripcion" class="form-label"></label>
+            <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Descripcion" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Horas" class="form-label"></label>
+            <input asp-for="Horas" class="form-control" style="max-width:140px" />
+            <span asp-validation-for="Horas" class="text-danger small"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Agregar curso</button>
+        <a asp-action="Cursos" class="btn btn-link">Cancelar</a>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

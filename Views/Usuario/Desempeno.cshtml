@@ -1,0 +1,35 @@
+@model List<Inscripcion>
+@{
+    ViewData["Title"] = "Desempeño";
+    var completados = Model.Count(i => i.Progreso == 100);
+    var promedio = Model.Any() ? (int)Model.Average(i => i.Progreso) : 0;
+}
+<h1 class="h3 mb-4">Desempeño</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="caja dato"><div class="valor">@promedio %</div><div class="etiqueta">Progreso promedio</div></div></div>
+    <div class="col-md-4"><div class="caja dato"><div class="valor">@completados</div><div class="etiqueta">Cursos completados</div></div></div>
+    <div class="col-md-4"><div class="caja dato"><div class="valor">@(Model.Count - completados)</div><div class="etiqueta">Cursos en curso</div></div></div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="caja text-secondary">Tu desempeño aparecerá cuando te inscribas en un curso.</div>
+}
+else
+{
+    <div class="caja">
+        @foreach (var i in Model)
+        {
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>@i.Curso!.Titulo</span>
+                    <span>@i.Progreso % @(i.Nota.HasValue ? $"· Nota {i.Nota:0.0}" : "")</span>
+                </div>
+                <div class="progress" role="progressbar" aria-valuenow="@i.Progreso" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso en @i.Curso.Titulo">
+                    <div class="progress-bar" style="width:@i.Progreso%"></div>
+                </div>
+            </div>
+        }
+    </div>
+}

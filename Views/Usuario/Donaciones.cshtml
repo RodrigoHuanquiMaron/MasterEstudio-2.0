@@ -1,0 +1,49 @@
+@model DonacionesViewModel
+@{ ViewData["Title"] = "Donaciones"; }
+<h1 class="h3 mb-4">Donaciones</h1>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="caja">
+            <h2 class="h5">Hacer una donación</h2>
+            <p class="small text-secondary">Tu aporte ayuda a mantener los cursos gratuitos.</p>
+            <form asp-action="Donar" method="post">
+                <div class="mb-3">
+                    <label for="monto" class="form-label">Monto (S/)</label>
+                    <input id="monto" name="monto" type="number" min="1" max="10000" step="0.01" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label for="mensaje" class="form-label">Mensaje (opcional)</label>
+                    <input id="mensaje" name="mensaje" maxlength="200" class="form-control" />
+                </div>
+                <button type="submit" class="btn btn-primary">Donar</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="caja">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                <h2 class="h5 mb-0">Historial</h2>
+                <span class="text-secondary">Total: S/ @Model.Total.ToString("N2")</span>
+            </div>
+            @if (!Model.Historial.Any())
+            {
+                <p class="text-secondary mb-0">Todavía no registras donaciones.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead><tr><th>Fecha</th><th>Monto</th><th>Mensaje</th></tr></thead>
+                        <tbody>
+                        @foreach (var d in Model.Historial)
+                        {
+                            <tr><td>@d.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td>S/ @d.Monto.ToString("N2")</td><td>@d.Mensaje</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

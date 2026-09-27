@@ -1,19 +1,22 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using PlataformaCursos.Data;
 using PlataformaCursos.Models;
 
 namespace PlataformaCursos.Controllers;
 
 public class HomeController : Controller
 {
+    // Envía a cada rol a su propio panel
     public IActionResult Index()
     {
-        return View();
-    }
+        if (User.IsInRole(SeedData.RolAdmin))
+            return RedirectToAction("Index", "Admin");
 
-    public IActionResult Privacy()
-    {
-        return View();
+        if (User.IsInRole(SeedData.RolUsuario))
+            return RedirectToAction("Panel", "Usuario");
+
+        return View(); // página de bienvenida para visitantes
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

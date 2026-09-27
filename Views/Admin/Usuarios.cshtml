@@ -1,0 +1,22 @@
+@model List<UsuarioResumenViewModel>
+@{ ViewData["Title"] = "Usuarios"; }
+<h1 class="h3 mb-4">Usuarios</h1>
+
+<div class="caja p-0 table-responsive">
+    <table class="table align-middle mb-0">
+        <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Cursos</th><th>Registro</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td>@u.Nombre</td>
+                <td>@u.Email</td>
+                <td><span class="badge @(u.Rol == "Administrador" ? "text-bg-dark" : "text-bg-light border")">@u.Rol</span></td>
+                <td>@u.CursosInscritos</td>
+                <td>@u.FechaRegistro.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                <td class="text-end"><a class="btn btn-outline-secondary btn-sm" asp-action="Perfil" asp-route-id="@u.Id">Ver perfil</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
