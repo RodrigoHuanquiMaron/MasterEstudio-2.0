@@ -45,7 +45,22 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // Sesión del servidor: datos temporales del usuario
-builder.Services.AddDistributedMemoryCache();   // en la Parte 4 se cambia por Redis
+// Caché distribuida: Redis si existe REDIS_URL; si no, memoria local.
+// Aquí también se guardan las sesiones de la Parte 2.
+var configuracionRedis = ConexionRedis.Obtener(builder.Configuration);
+if (configuracionRedis is not null)
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = configuracionRedis;
+        options.InstanceName = "masterestudio:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+builder.Services.AddScoped<CacheService>();   // en la Parte 4 se cambia por Redis
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = "MasterEstudio.Session";
@@ -59,6 +74,10 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+app.Logger.LogInformation(configuracionRedis is null
+    ? "Caché: memoria local (REDIS_URL no definido)"
+    : "Caché: Redis conectado");
 
 // Migraciones, roles, admin y cursos de prueba
 using (var scope = app.Services.CreateScope())

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PlataformaCursos.Data;
+using PlataformaCursos.Infrastructure;
 using PlataformaCursos.Models;
 using PlataformaCursos.Models.ViewModels;
 
@@ -13,23 +14,29 @@ public class AdminController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly CacheService _cache;
 
-    public AdminController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public AdminController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, CacheService cache)
     {
         _db = db;
         _userManager = userManager;
+        _cache = cache;
     }
 
+    // Resumen con caché de 60 s
     public async Task<IActionResult> Index()
     {
-        var montos = await _db.Donaciones.Select(d => d.Monto).ToListAsync();
-        var model = new ResumenAdminViewModel
+        var model = await _cache.ObtenerOCrearAsync(Claves.ResumenAdmin, async () =>
         {
-            TotalUsuarios = await _db.Users.CountAsync(),
-            TotalCursos = await _db.Cursos.CountAsync(),
-            TotalInscripciones = await _db.Inscripciones.CountAsync(),
-            TotalDonado = montos.Sum()
-        };
+            var montos = await _db.Donaciones.Select(d => d.Monto).ToListAsync();
+            return new ResumenAdminViewModel
+            {
+                TotalUsuarios = await _db.Users.CountAsync(),
+                TotalCursos = await _db.Cursos.CountAsync(),
+                TotalInscripciones = await _db.Inscripciones.CountAsync(),
+                TotalDonado = montos.Sum()
+            };
+        });
         return View(model);
     }
 
@@ -95,7 +102,8 @@ public class AdminController : Controller
         if (!ModelState.IsValid) return View(curso);
 
         _db.Cursos.Add(curso);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync();          // 1. se guarda en PostgreSQL
+        await _cache.CursosCambiaronAsync();   // 2. se invalida la caché
         TempData["Mensaje"] = $"Curso \"{curso.Titulo}\" agregado.";
         return RedirectToAction(nameof(Cursos));
     }
@@ -107,8 +115,9 @@ public class AdminController : Controller
         var curso = await _db.Cursos.FindAsync(id);
         if (curso is null) return NotFound();
 
-        _db.Cursos.Remove(curso);   // sus inscripciones se borran en cascada
+        _db.Cursos.Remove(curso);              // sus inscripciones se borran en cascada
         await _db.SaveChangesAsync();
+        await _cache.CursosCambiaronAsync();
         TempData["Mensaje"] = $"Curso \"{curso.Titulo}\" eliminado.";
         return RedirectToAction(nameof(Cursos));
     }
