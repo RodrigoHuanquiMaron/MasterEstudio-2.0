@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PlataformaCursos.Data;
@@ -6,9 +7,15 @@ using PlataformaCursos.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Base de datos (SQLite por ahora; en la Parte 3 se cambia a PostgreSQL)
+// Base de datos PostgreSQL: usa DATABASE_URL (Render / user-secrets) o la cadena local
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(ConexionBD.Obtener(builder.Configuration)));
+
+// Guarda en PostgreSQL las llaves que cifran las cookies,
+// para que "Recordarme" siga funcionando después de cada despliegue
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>()
+    .SetApplicationName("MasterEstudio");
 
 // Identity con roles
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -30,11 +37,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Cuenta/AccesoDenegado";
 
     options.Cookie.Name = "MasterEstudio.Auth";
-    options.Cookie.HttpOnly = true;                               // JavaScript no puede leerla
+    options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);                // duración con "Recordarme"
-    options.SlidingExpiration = true;                             // se renueva si el usuario sigue activo
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.SlidingExpiration = true;
 });
 
 // Sesión del servidor: datos temporales del usuario
@@ -65,14 +72,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Render ya redirige a HTTPS por su cuenta, por eso no se usa UseHttpsRedirection
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication();                        // 1. ¿quién eres? (lee la cookie)
-app.UseSession();                               // 2. carga la sesión
-app.UseMiddleware<SesionUsuarioMiddleware>();   // 3. reconstruye la sesión si hace falta
-app.UseAuthorization();                         // 4. ¿qué puedes hacer?
+app.UseAuthentication();
+app.UseSession();
+app.UseMiddleware<SesionUsuarioMiddleware>();
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
