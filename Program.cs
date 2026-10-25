@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -5,14 +6,17 @@ using PlataformaCursos.Data;
 using PlataformaCursos.Infrastructure;
 using PlataformaCursos.Models;
 
+// Números con punto decimal en Windows y en Render (evita errores al enviar notas como 91.5)
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Base de datos PostgreSQL: usa DATABASE_URL (Render / user-secrets) o la cadena local
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(ConexionBD.Obtener(builder.Configuration)));
 
-// Guarda en PostgreSQL las llaves que cifran las cookies,
-// para que "Recordarme" siga funcionando después de cada despliegue
+// Guarda en PostgreSQL las llaves que cifran las cookies
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<ApplicationDbContext>()
     .SetApplicationName("MasterEstudio");
@@ -29,6 +33,18 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
+// Login con Google (solo se activa si existen las credenciales)
+var googleId = builder.Configuration["Authentication:Google:ClientId"];
+var googleSecreto = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleId) && !string.IsNullOrWhiteSpace(googleSecreto))
+{
+    builder.Services.AddAuthentication().AddGoogle(options =>
+    {
+        options.ClientId = googleId;
+        options.ClientSecret = googleSecreto;
+    });
+}
+
 // Cookie de autenticación: recuerda al usuario
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -44,9 +60,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// Sesión del servidor: datos temporales del usuario
 // Caché distribuida: Redis si existe REDIS_URL; si no, memoria local.
-// Aquí también se guardan las sesiones de la Parte 2.
 var configuracionRedis = ConexionRedis.Obtener(builder.Configuration);
 if (configuracionRedis is not null)
 {
@@ -64,7 +78,12 @@ builder.Services.AddScoped<CacheService>();
 
 // PieHost: WebSocket en tiempo real
 builder.Services.Configure<PieHostOptions>(builder.Configuration.GetSection("PieHost"));
-builder.Services.AddHttpClient<PieHostService>(client => client.Timeout = TimeSpan.FromSeconds(10));   // en la Parte 4 se cambia por Redis
+builder.Services.AddHttpClient<PieHostService>(client => client.Timeout = TimeSpan.FromSeconds(10));
+
+// Machine learning: análisis de sentimiento de donaciones con Hugging Face
+builder.Services.AddHttpClient<SentimientoService>(client => client.Timeout = TimeSpan.FromSeconds(15));
+
+// Sesión del servidor: datos temporales del usuario
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = "MasterEstudio.Session";

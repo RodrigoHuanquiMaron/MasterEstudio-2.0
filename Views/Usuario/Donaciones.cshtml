@@ -1,34 +1,70 @@
 @model DonacionesViewModel
 @{ ViewData["Title"] = "Donaciones"; }
-<h1 class="h3 mb-4">Donaciones</h1>
 
-<div class="row g-4">
-    <div class="col-lg-5">
-        <div class="caja">
-            <h2 class="h5">Hacer una donación</h2>
-            <p class="small text-secondary">Tu aporte ayuda a mantener los cursos gratuitos.</p>
-            <form asp-action="Donar" method="post">
-                <div class="mb-3">
-                    <label for="monto" class="form-label">Monto (S/)</label>
-                    <input id="monto" name="monto" type="number" min="1" max="10000" step="0.01" class="form-control" required />
-                </div>
-                <div class="mb-3">
-                    <label for="mensaje" class="form-label">Mensaje (opcional)</label>
-                    <input id="mensaje" name="mensaje" maxlength="200" class="form-control" />
-                </div>
-                <button type="submit" class="btn btn-primary">Donar</button>
-            </form>
+<div class="page-head">
+    <div>
+        <h1>Donaciones y Patrocinios</h1>
+        <p class="page-sub">Apoya la infraestructura tecnológica y académica de MasterEstudio · Libre de publicidad</p>
+    </div>
+    <span class="chip-ciclo">Tu aporte total: S/ @Model.MiTotal.ToString("N2")</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Total recaudado</span><span class="kpi-icono"><i class="bi bi-currency-dollar"></i></span></div>
+            <div class="kpi-valor">S/ @Model.TotalRecaudado.ToString("N2")</div>
+            <div class="kpi-sub">Aportes de toda la comunidad</div>
         </div>
     </div>
-    <div class="col-lg-7">
-        <div class="caja">
-            <div class="d-flex justify-content-between align-items-baseline mb-2">
-                <h2 class="h5 mb-0">Historial</h2>
-                <span class="text-secondary">Total: S/ @Model.Total.ToString("N2")</span>
-            </div>
-            @if (!Model.Historial.Any())
+    <div class="col-md-4">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Donaciones recibidas</span><span class="kpi-icono"><i class="bi bi-heart"></i></span></div>
+            <div class="kpi-valor">@Model.TotalDonaciones Transacciones</div>
+            <div class="kpi-sub">Promedio: S/ @((Model.TotalDonaciones == 0 ? 0 : Model.TotalRecaudado / Model.TotalDonaciones).ToString("N2")) por aporte</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Donantes únicos</span><span class="kpi-icono"><i class="bi bi-people"></i></span></div>
+            <div class="kpi-valor">@Model.Donantes Personas</div>
+            <div class="kpi-sub">Comunidad activa y colaboradora</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="tarjeta mb-4">
+            <h2 class="tarjeta-titulo mb-1">Aportaciones recientes</h2>
+            @if (!Model.Recientes.Any())
             {
-                <p class="text-secondary mb-0">Todavía no registras donaciones.</p>
+                <p class="small text-secondary mb-0 mt-2">Todavía no hay donaciones. ¡Sé el primero!</p>
+            }
+            @foreach (var a in Model.Recientes)
+            {
+                <div class="aporte">
+                    <span class="avatar">@Calificacion.Iniciales(a.Nombre)</span>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold small">@a.Nombre</span>
+                            <span class="fw-semibold small">S/ @a.Monto.ToString("N2")</span>
+                        </div>
+                        <div class="actividad-fecha">@a.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        @if (!string.IsNullOrEmpty(a.Mensaje))
+                        {
+                            <div class="aporte-mensaje">"@a.Mensaje"</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="tarjeta">
+            <h2 class="tarjeta-titulo mb-2">Mi historial</h2>
+            @if (!Model.MiHistorial.Any())
+            {
+                <p class="small text-secondary mb-0">Todavía no registras donaciones.</p>
             }
             else
             {
@@ -36,14 +72,57 @@
                     <table class="table mb-0">
                         <thead><tr><th>Fecha</th><th>Monto</th><th>Mensaje</th></tr></thead>
                         <tbody>
-                        @foreach (var d in Model.Historial)
-                        {
-                            <tr><td>@d.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td>S/ @d.Monto.ToString("N2")</td><td>@d.Mensaje</td></tr>
-                        }
+                            @foreach (var d in Model.MiHistorial)
+                            {
+                                <tr>
+                                    <td>@d.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>S/ @d.Monto.ToString("N2")</td>
+                                    <td>@d.Mensaje</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
             }
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="tarjeta mb-4">
+            <h2 class="tarjeta-titulo">Tabla de honor (líderes)</h2>
+            <p class="tarjeta-sub mb-2">Los patrocinadores más destacados de nuestra comunidad</p>
+            @if (!Model.TablaHonor.Any())
+            {
+                <p class="small text-secondary mb-0">Aún no hay donantes.</p>
+            }
+            <ul class="honor">
+                @foreach (var h in Model.TablaHonor)
+                {
+                    <li><span class="pos">#@h.Posicion</span><span>@h.Nombre</span><span class="total">S/ @h.Total.ToString("N2")</span></li>
+                }
+            </ul>
+        </div>
+
+        <div class="tarjeta">
+            <div class="caja-cta mb-3">
+                <div class="fw-semibold small">¿Quieres figurar en la lista?</div>
+                <div class="small text-secondary">Todas las contribuciones nos ayudan a añadir más servidores y mantener el sitio rápido y seguro.</div>
+            </div>
+            <form asp-action="Donar" method="post">
+                <div class="mb-3">
+                    <label for="monto" class="form-label small fw-semibold">Monto (S/)</label>
+                    <input id="monto" name="monto" type="number" min="1" max="10000" step="0.01" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label for="mensaje" class="form-label small fw-semibold">Mensaje (opcional)</label>
+                    <textarea id="mensaje" name="mensaje" maxlength="200" rows="2" class="form-control" placeholder="¿Qué te parece la plataforma?"></textarea>
+                </div>
+                <div class="form-check mb-3">
+                    <input id="anonima" name="anonima" type="checkbox" value="true" class="form-check-input" />
+                    <label for="anonima" class="form-check-label small">Donar de forma anónima</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Hacer una donación</button>
+            </form>
         </div>
     </div>
 </div>

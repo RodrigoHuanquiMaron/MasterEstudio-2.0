@@ -15,7 +15,11 @@ public class Inscripcion
     [Range(0, 100)]
     public int Progreso { get; set; }
 
+    // Calificación en porcentaje (0 a 100), la asigna el administrador
+    [Range(0, 100)]
     public decimal? Nota { get; set; }
+
+    public DateTime? FechaCalificacion { get; set; }
 
     public DateTime FechaInscripcion { get; set; } = DateTime.UtcNow;
 }

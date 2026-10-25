@@ -1,13 +1,52 @@
 @model ResumenAdminViewModel
 @{ ViewData["Title"] = "Panel de administración"; }
-<h1 class="h3 mb-4">Panel de administración</h1>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalUsuarios</div><div class="etiqueta">Usuarios</div></div></div>
-    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalCursos</div><div class="etiqueta">Cursos</div></div></div>
-    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">@Model.TotalInscripciones</div><div class="etiqueta">Inscripciones</div></div></div>
-    <div class="col-6 col-lg-3"><div class="caja dato"><div class="valor">S/ @Model.TotalDonado.ToString("N2")</div><div class="etiqueta">Donado</div></div></div>
+<div class="page-head">
+    <div>
+        <h1>Panel de administración</h1>
+        <p class="page-sub">Resumen general de MasterEstudio</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary" asp-action="CrearCurso"><i class="bi bi-plus-lg"></i> Agregar curso</a>
+        <a class="btn btn-light-borde" asp-action="Usuarios">Revisar usuarios</a>
+    </div>
 </div>
 
-<a class="btn btn-primary me-2" asp-action="CrearCurso">Agregar curso</a>
-<a class="btn btn-outline-secondary" asp-action="Usuarios">Revisar usuarios</a>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Usuarios</span><span class="kpi-icono"><i class="bi bi-people"></i></span></div>
+            <div class="kpi-valor">@Model.TotalUsuarios</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Cursos</span><span class="kpi-icono"><i class="bi bi-journal-bookmark"></i></span></div>
+            <div class="kpi-valor">@Model.TotalCursos</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Inscripciones</span><span class="kpi-icono"><i class="bi bi-person-check"></i></span></div>
+            <div class="kpi-valor">@Model.TotalInscripciones</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Donado</span><span class="kpi-icono"><i class="bi bi-heart"></i></span></div>
+            <div class="kpi-valor">S/ @Model.TotalDonado.ToString("N2")</div>
+        </div>
+    </div>
+</div>
+
+<div class="tarjeta d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+        <h2 class="tarjeta-titulo">Sentimiento de las donaciones</h2>
+        <p class="tarjeta-sub mb-0">Clasificado automáticamente con machine learning (Hugging Face)</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="badge-sent sent-positiva">@Model.DonacionesPositivas positivas</span>
+        <span class="badge-sent sent-negativa">@Model.DonacionesNegativas negativas</span>
+        <a asp-action="Donaciones" class="btn btn-light-borde btn-sm">Ver donaciones</a>
+    </div>
+</div>

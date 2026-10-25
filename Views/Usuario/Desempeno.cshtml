@@ -1,35 +1,183 @@
-@model List<Inscripcion>
+@model DesempenoViewModel
 @{
     ViewData["Title"] = "Desempeño";
-    var completados = Model.Count(i => i.Progreso == 100);
-    var promedio = Model.Any() ? (int)Model.Average(i => i.Progreso) : 0;
+    var diferencia = Model.HorasEstaSemana - Model.HorasSemanaAnterior;
 }
-<h1 class="h3 mb-4">Desempeño</h1>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="caja dato"><div class="valor">@promedio %</div><div class="etiqueta">Progreso promedio</div></div></div>
-    <div class="col-md-4"><div class="caja dato"><div class="valor">@completados</div><div class="etiqueta">Cursos completados</div></div></div>
-    <div class="col-md-4"><div class="caja dato"><div class="valor">@(Model.Count - completados)</div><div class="etiqueta">Cursos en curso</div></div></div>
+<div class="page-head">
+    <div>
+        <h1>Desempeño Académico</h1>
+        <p class="page-sub">Año Académico @DateTime.Now.Year · Análisis acumulado</p>
+    </div>
 </div>
 
-@if (!Model.Any())
-{
-    <div class="caja text-secondary">Tu desempeño aparecerá cuando te inscribas en un curso.</div>
-}
-else
-{
-    <div class="caja">
-        @foreach (var i in Model)
-        {
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small mb-1">
-                    <span>@i.Curso!.Titulo</span>
-                    <span>@i.Progreso % @(i.Nota.HasValue ? $"· Nota {i.Nota:0.0}" : "")</span>
-                </div>
-                <div class="progress" role="progressbar" aria-valuenow="@i.Progreso" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso en @i.Curso.Titulo">
-                    <div class="progress-bar" style="width:@i.Progreso%"></div>
-                </div>
-            </div>
-        }
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Promedio general</span><span class="kpi-icono"><i class="bi bi-award"></i></span></div>
+            <div class="kpi-valor">@Calificacion.Texto(Model.PromedioNota)</div>
+            <div class="kpi-sub">@(Model.Inscripciones.Count - Model.Pendientes) cursos calificados</div>
+        </div>
     </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Créditos aprobados</span><span class="kpi-icono"><i class="bi bi-mortarboard"></i></span></div>
+            <div class="kpi-valor">@Model.CreditosAprobados/@Model.CreditosTotales</div>
+            <div class="kpi-sub">@(Model.CreditosTotales == 0 ? 0 : Model.CreditosAprobados * 100 / Model.CreditosTotales)% completado</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Horas totales</span><span class="kpi-icono"><i class="bi bi-clock-history"></i></span></div>
+            <div class="kpi-valor">@Calificacion.Horas(Model.HorasTotales)</div>
+            <div class="kpi-sub">Registradas con el cronómetro</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Tendencia semanal</span><span class="kpi-icono"><i class="bi bi-graph-up"></i></span></div>
+            <div class="kpi-valor">@(diferencia >= 0 ? "+" : "")@(diferencia.ToString("0.#")) h</div>
+            <div class="kpi-sub">
+                <span class="@(diferencia >= 0 ? "sube" : "baja")"><i class="bi @(diferencia >= 0 ? "bi-arrow-up" : "bi-arrow-down")"></i></span>
+                vs. semana anterior
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="tarjeta mb-4">
+            <h2 class="tarjeta-titulo">Evolución de horas de estudio</h2>
+            <p class="tarjeta-sub mb-3">Horas estudiadas por semana (últimas 8 semanas)</p>
+            <div class="grafico alto"><canvas id="grafico-evolucion" role="img" aria-label="Horas de estudio por semana"></canvas></div>
+        </div>
+
+        <div class="tarjeta">
+            <h2 class="tarjeta-titulo">Rendimiento por curso actual</h2>
+            <p class="tarjeta-sub mb-3">Calificaciones obtenidas en tus cursos</p>
+            @if (!Model.Inscripciones.Any())
+            {
+                <p class="small text-secondary mb-0">Inscríbete en un curso para ver tu rendimiento.</p>
+            }
+            @foreach (var i in Model.Inscripciones)
+            {
+                <div class="fila-nota">
+                    <span>@i.Curso?.Titulo</span>
+                    @if (i.Nota.HasValue)
+                    {
+                        <div class="barra @(i.Nota >= 70 ? "verde" : "")"><span style="width:@(i.Nota.Value.ToString("0.#"))%"></span></div>
+                        <span class="val">@(i.Nota.Value.ToString("0.#"))%</span>
+                    }
+                    else
+                    {
+                        <div class="barra"><span style="width:0"></span></div>
+                        <span class="val pend">Pendiente</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="tarjeta mb-4">
+            <h2 class="tarjeta-titulo">Fortalezas y áreas de mejora</h2>
+            <div class="subtitulo-lista verde">Fortalezas</div>
+            <ul class="lista-check">
+                @if (!Model.Fortalezas.Any())
+                {
+                    <li class="text-secondary">Aún no hay suficientes datos.</li>
+                }
+                @foreach (var f in Model.Fortalezas)
+                {
+                    <li><i class="bi bi-check-circle-fill"></i><span>@f</span></li>
+                }
+            </ul>
+            <div class="subtitulo-lista ambar mt-3">Áreas de mejora</div>
+            <ul class="lista-check">
+                @if (!Model.AreasMejora.Any())
+                {
+                    <li class="text-secondary">¡Todo en orden por ahora!</li>
+                }
+                @foreach (var m in Model.AreasMejora)
+                {
+                    <li><i class="bi bi-exclamation-triangle-fill"></i><span>@m</span></li>
+                }
+            </ul>
+        </div>
+
+        <div class="tarjeta mb-4">
+            <h2 class="tarjeta-titulo mb-3">Distribución de calificaciones</h2>
+            <div class="d-flex align-items-center gap-3">
+                <div class="grafico dona flex-shrink-0" style="width:150px"><canvas id="grafico-dona" role="img" aria-label="Distribución de calificaciones"></canvas></div>
+                <ul class="leyenda">
+                    <li><span class="punto" style="background:#22C55E"></span>Rango A (@Model.RangoA)</li>
+                    <li><span class="punto" style="background:#4F46E5"></span>Rango B (@Model.RangoB)</li>
+                    <li><span class="punto" style="background:#F59E0B"></span>Menor a B (@Model.RangoC)</li>
+                    <li><span class="punto" style="background:#E5E7EB"></span>Pendientes (@Model.Pendientes)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="tarjeta">
+            <h2 class="tarjeta-titulo mb-2">Resumen de actividad semanal</h2>
+            <div class="curso-dato py-1"><span class="etq">Horas esta semana</span><span class="val">@Calificacion.Horas(Model.HorasEstaSemana)</span></div>
+            <div class="curso-dato py-1"><span class="etq">Semana anterior</span><span class="val">@Calificacion.Horas(Model.HorasSemanaAnterior)</span></div>
+            <div class="curso-dato py-1"><span class="etq">Sesiones de estudio</span><span class="val">@Model.SesionesEstaSemana</span></div>
+            <div class="curso-dato py-1"><span class="etq">Cursos completados</span><span class="val">@Model.Completados</span></div>
+            <a asp-action="Estudio" class="btn btn-primary btn-sm w-100 mt-3"><i class="bi bi-play-fill"></i> Iniciar sesión de estudio</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            if (!window.Chart) return;
+            const semanas = @Html.Raw(Json.Serialize(Model.Semanas));
+            const horas = @Html.Raw(Json.Serialize(Model.HorasPorSemana));
+            new Chart(document.getElementById('grafico-evolucion'), {
+                type: 'line',
+                data: {
+                    labels: semanas,
+                    datasets: [{
+                        data: horas,
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, .08)',
+                        fill: true,
+                        tension: .35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#4F46E5'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: c => c.parsed.y.toFixed(2) + ' h' } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => v + ' h' }, grid: { color: '#EEF0F4' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const rangos = [@Model.RangoA, @Model.RangoB, @Model.RangoC, @Model.Pendientes];
+            const total = rangos.reduce((a, b) => a + b, 0);
+            new Chart(document.getElementById('grafico-dona'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Rango A', 'Rango B', 'Menor a B', 'Pendientes'],
+                    datasets: [{
+                        data: total === 0 ? [0, 0, 0, 1] : rangos,
+                        backgroundColor: ['#22C55E', '#4F46E5', '#F59E0B', '#E5E7EB'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '70%', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        })();
+    </script>
 }

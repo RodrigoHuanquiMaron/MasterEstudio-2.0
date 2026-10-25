@@ -15,5 +15,14 @@ public class Donacion
     [StringLength(200)]
     public string? Mensaje { get; set; }
 
+    // Si es true, en la tabla de honor aparece como "Estudiante Anónimo"
+    public bool Anonima { get; set; }
+
+    // Resultado del análisis de sentimiento (machine learning): Positiva, Negativa, Neutral...
+    [StringLength(20)]
+    public string? Sentimiento { get; set; }
+
+    public double? SentimientoConfianza { get; set; }
+
     public DateTime Fecha { get; set; } = DateTime.UtcNow;
 }

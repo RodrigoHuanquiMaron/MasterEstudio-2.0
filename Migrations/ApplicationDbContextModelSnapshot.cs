@@ -17,7 +17,7 @@ namespace PlataformaCursos.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -181,6 +181,12 @@ namespace PlataformaCursos.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Carrera")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Ciclo")
+                        .HasColumnType("text");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
@@ -252,6 +258,13 @@ namespace PlataformaCursos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Categoria")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Creditos")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Descripcion")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -261,6 +274,14 @@ namespace PlataformaCursos.Migrations
 
                     b.Property<int>("Horas")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Instructor")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
@@ -280,6 +301,9 @@ namespace PlataformaCursos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Anonima")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("timestamp with time zone");
 
@@ -290,6 +314,13 @@ namespace PlataformaCursos.Migrations
                     b.Property<decimal>("Monto")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Sentimiento")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double?>("SentimientoConfianza")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("UsuarioId")
                         .IsRequired()
@@ -313,12 +344,15 @@ namespace PlataformaCursos.Migrations
                     b.Property<int>("CursoId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("FechaCalificacion")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("FechaInscripcion")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("Nota")
-                        .HasPrecision(4, 2)
-                        .HasColumnType("numeric(4,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<int>("Progreso")
                         .HasColumnType("integer");
@@ -335,6 +369,36 @@ namespace PlataformaCursos.Migrations
                         .IsUnique();
 
                     b.ToTable("Inscripciones");
+                });
+
+            modelBuilder.Entity("PlataformaCursos.Models.SesionEstudio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Inicio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Segundos")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("UsuarioId", "Inicio");
+
+                    b.ToTable("SesionesEstudio");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -418,11 +482,32 @@ namespace PlataformaCursos.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("PlataformaCursos.Models.SesionEstudio", b =>
+                {
+                    b.HasOne("PlataformaCursos.Models.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlataformaCursos.Models.ApplicationUser", "Usuario")
+                        .WithMany("SesionesEstudio")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("PlataformaCursos.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Donaciones");
 
                     b.Navigation("Inscripciones");
+
+                    b.Navigation("SesionesEstudio");
                 });
 
             modelBuilder.Entity("PlataformaCursos.Models.Curso", b =>

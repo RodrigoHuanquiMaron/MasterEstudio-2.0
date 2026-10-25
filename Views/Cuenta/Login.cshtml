@@ -1,25 +1,46 @@
 @model LoginViewModel
-@{ ViewData["Title"] = "Iniciar sesión"; }
-<div class="caja auth-caja">
-    <h1 class="h3 mb-4">Iniciar sesión</h1>
+@inject SignInManager<ApplicationUser> SignInManager
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = "_LayoutAuth";
+    var externos = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+}
+<div style="max-width:420px">
+    <h1 class="mb-1">¡Hola de nuevo! 👋</h1>
+    <p class="text-secondary mb-4">Ingresa tus credenciales para acceder a tus clases virtuales de hoy.</p>
+
     <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
         <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
         <div class="mb-3">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" autocomplete="username" />
+            <label asp-for="Email" class="form-label small fw-semibold"></label>
+            <input asp-for="Email" class="form-control" autocomplete="username" placeholder="alan_garcia@usmp.pe" />
             <span asp-validation-for="Email" class="text-danger small"></span>
         </div>
         <div class="mb-3">
-            <label asp-for="Password" class="form-label"></label>
+            <label asp-for="Password" class="form-label small fw-semibold"></label>
             <input asp-for="Password" class="form-control" autocomplete="current-password" />
             <span asp-validation-for="Password" class="text-danger small"></span>
         </div>
-        <div class="form-check mb-3">
+        <div class="form-check mb-4">
             <input asp-for="RecordarMe" class="form-check-input" />
-            <label asp-for="RecordarMe" class="form-check-label"></label>
+            <label asp-for="RecordarMe" class="form-check-label small"></label>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+        <button type="submit" class="btn btn-primary w-100 py-2">Iniciar sesión</button>
     </form>
-    <p class="mt-3 mb-0 small">¿No tienes cuenta? <a asp-action="Registro">Crear cuenta</a></p>
+
+    @if (externos.Any())
+    {
+        <div class="separador">o</div>
+        <form asp-action="LoginExterno" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            @foreach (var proveedor in externos)
+            {
+                <button type="submit" name="proveedor" value="@proveedor.Name" class="btn btn-light-borde w-100 py-2 mb-2">
+                    <i class="bi bi-google me-2"></i>Ingresar con @proveedor.DisplayName
+                </button>
+            }
+        </form>
+    }
+
+    <p class="mt-4 mb-0 small text-center text-secondary">¿Aún no tienes cuenta? <a asp-action="Registro" class="fw-semibold">Regístrate</a></p>
 </div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

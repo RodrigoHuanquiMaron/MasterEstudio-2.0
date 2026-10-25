@@ -1,31 +1,142 @@
 @model PanelUsuarioViewModel
-@{ ViewData["Title"] = "Panel principal"; }
-<h1 class="h3 mb-4">Hola, @Model.Nombre</h1>
+@{ ViewData["Title"] = "Panel"; }
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="caja dato"><div class="valor">@Model.CursosInscritos</div><div class="etiqueta">Cursos inscritos</div></div></div>
-    <div class="col-md-4"><div class="caja dato"><div class="valor">@Model.ProgresoPromedio %</div><div class="etiqueta">Progreso promedio</div></div></div>
-    <div class="col-md-4"><div class="caja dato"><div class="valor">S/ @Model.TotalDonado.ToString("N2")</div><div class="etiqueta">Total donado</div></div></div>
+<div class="page-head">
+    <div>
+        <h1>Bienvenido de nuevo, @Model.Nombre</h1>
+        <p class="page-sub">Seguimiento del Año Académico @DateTime.Now.Year · @(Model.Carrera ?? "Estudiante")</p>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Ciclo))
+    {
+        <span class="chip-ciclo">@Model.Ciclo</span>
+    }
 </div>
 
-<h2 class="h5 mb-3">Cursos disponibles</h2>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Cursos totales</span><span class="kpi-icono"><i class="bi bi-journal-bookmark"></i></span></div>
+            <div class="kpi-valor">@Model.CursosActivos Activos</div>
+            <div class="kpi-sub">@Model.CursosTotales inscritos · @Model.Completados completados</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Calificación promedio</span><span class="kpi-icono"><i class="bi bi-award"></i></span></div>
+            <div class="kpi-valor">@Calificacion.Texto(Model.PromedioNota)</div>
+            <div class="kpi-sub">@(Model.PromedioNota.HasValue ? "Promedio de tus cursos calificados" : "Aún no tienes calificaciones")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Horas estudiadas</span><span class="kpi-icono"><i class="bi bi-clock-history"></i></span></div>
+            <div class="kpi-valor">@Calificacion.Horas(Model.HorasTotales)</div>
+            <div class="kpi-sub">Esta semana: @Calificacion.Horas(Model.HorasSemana)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi">
+            <div class="kpi-top"><span class="kpi-label">Certificados</span><span class="kpi-icono"><i class="bi bi-patch-check"></i></span></div>
+            <div class="kpi-valor">@Model.Completados Ganados</div>
+            <div class="kpi-sub">Uno por cada curso completado</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="seccion">Cursos inscritos</h2>
+            <a asp-action="MisCursos" class="link-sm">Mostrar todos los cursos (@Model.CursosTotales)</a>
+        </div>
+
+        @if (!Model.Inscripciones.Any())
+        {
+            <div class="tarjeta text-secondary">Aún no te inscribes en ningún curso. Elige uno en <a href="#explorar">Explorar cursos</a>.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var i in Model.Inscripciones.Take(4))
+                {
+                    <div class="col-md-6">
+                        <div class="curso-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="chip-cat">@(i.Curso?.Categoria ?? "General")</span>
+                                <span class="badge-estado @Calificacion.ClaseEstado(i.Progreso)">@Calificacion.Estado(i.Progreso)</span>
+                            </div>
+                            <h3 class="curso-titulo">@i.Curso?.Titulo</h3>
+                            <p class="curso-instructor">Instructor: @(i.Curso?.Instructor ?? "Por asignar")</p>
+                            <div class="curso-dato"><span class="etq">Progreso del programa del curso</span><span class="val">@i.Progreso%</span></div>
+                            <div class="barra @(i.Progreso >= 100 ? "verde" : "")"><span style="width:@(i.Progreso)%"></span></div>
+                            <div class="curso-pie curso-dato">
+                                <span class="etq"><i class="bi bi-award me-1"></i>Calificación actual</span>
+                                <span class="val">@Calificacion.Texto(i.Nota)</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="col-xl-4">
+        <div class="tarjeta mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h2 class="tarjeta-titulo">Horas estudiadas esta semana</h2>
+                    <p class="tarjeta-sub">Tiempo total estudiado: @Calificacion.Horas(Model.HorasSemana)</p>
+                </div>
+                <a asp-action="Estudio" class="btn btn-primary btn-sm"><i class="bi bi-play-fill"></i> Iniciar estudio</a>
+            </div>
+            <div class="grafico"><canvas id="grafico-semana" aria-label="Horas estudiadas por día de esta semana" role="img"></canvas></div>
+        </div>
+
+        <div class="tarjeta">
+            <h2 class="tarjeta-titulo mb-2">Actividades recientes</h2>
+            @if (!Model.Actividades.Any())
+            {
+                <p class="small text-secondary mb-0">Tu actividad aparecerá aquí cuando estudies, te inscribas o recibas calificaciones.</p>
+            }
+            else
+            {
+                <ul class="actividades">
+                    @foreach (var a in Model.Actividades)
+                    {
+                        <li class="actividad">
+                            <span class="actividad-icono"><i class="bi @a.Icono"></i></span>
+                            <div>
+                                <div class="actividad-texto">@a.Texto</div>
+                                <div class="actividad-fecha">@a.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+<h2 class="seccion mt-5 mb-3" id="explorar">Explorar cursos</h2>
 @if (!Model.CursosDisponibles.Any())
 {
-    <div class="caja text-secondary">Ya estás inscrito en todos los cursos. Revisa tu avance en <a asp-action="MisCursos">Mis cursos</a>.</div>
+    <div class="tarjeta text-secondary">Ya estás inscrito en todos los cursos disponibles.</div>
 }
 else
 {
     <div class="row g-3" id="lista-cursos">
-        @foreach (var curso in Model.CursosDisponibles)
+        @foreach (var c in Model.CursosDisponibles)
         {
-            <div class="col-md-6 col-lg-4" data-curso-id="@curso.Id">
-                <div class="caja h-100 d-flex flex-column">
-                    <h3 class="h6 fw-semibold">@curso.Titulo</h3>
-                    <p class="text-secondary small flex-grow-1">@curso.Descripcion</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="small text-secondary">@curso.Horas horas</span>
+            <div class="col-md-6 col-lg-4" data-curso-id="@c.Id">
+                <div class="curso-card">
+                    <span class="chip-cat">@(c.Categoria ?? "General")</span>
+                    <h3 class="curso-titulo">@c.Titulo</h3>
+                    <p class="curso-instructor mb-2">Instructor: @(c.Instructor ?? "Por asignar")</p>
+                    <p class="small text-secondary flex-grow-1">@c.Descripcion</p>
+                    <div class="curso-pie d-flex justify-content-between align-items-center">
+                        <span class="small text-secondary">@c.Horas h · @c.Creditos créditos</span>
                         <form asp-action="Inscribirse" method="post">
-                            <input type="hidden" name="cursoId" value="@curso.Id" />
+                            <input type="hidden" name="cursoId" value="@c.Id" />
                             <button type="submit" class="btn btn-primary btn-sm">Inscribirme</button>
                         </form>
                     </div>
@@ -33,4 +144,39 @@ else
             </div>
         }
     </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            const lienzo = document.getElementById('grafico-semana');
+            if (!lienzo || !window.Chart) return;
+            const horas = @Html.Raw(Json.Serialize(Model.HorasPorDia));
+            const hoy = @Model.IndiceHoy;
+            new Chart(lienzo, {
+                type: 'bar',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        data: horas,
+                        backgroundColor: horas.map((_, i) => i === hoy ? '#4F46E5' : '#C7D2FE'),
+                        borderRadius: 6,
+                        maxBarThickness: 28
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: c => c.parsed.y.toFixed(2) + ' h' } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => v + ' h' }, grid: { color: '#EEF0F4' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        })();
+    </script>
 }

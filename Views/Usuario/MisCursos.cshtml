@@ -1,43 +1,85 @@
-@model List<Inscripcion>
-@{ ViewData["Title"] = "Mis cursos"; }
-<h1 class="h3 mb-4">Mis cursos</h1>
+@model MisCursosViewModel
+@{
+    ViewData["Title"] = "Mis Cursos";
+    var filtros = new[]
+    {
+        (Clave: "todos", Texto: "Todos", Cantidad: Model.Total),
+        (Clave: "encurso", Texto: "En curso", Cantidad: Model.EnCurso),
+        (Clave: "completado", Texto: "Completado", Cantidad: Model.Completados),
+        (Clave: "noiniciado", Texto: "No iniciado", Cantidad: Model.NoIniciados)
+    };
+}
 
-@if (!Model.Any())
+<div class="page-head">
+    <div>
+        <h1>Mis Cursos</h1>
+        <p class="page-sub">Año Académico @DateTime.Now.Year · @Model.Total cursos registrados</p>
+    </div>
+    <nav class="filtros" aria-label="Filtrar cursos">
+        @foreach (var f in filtros)
+        {
+            <a asp-action="MisCursos" asp-route-estado="@f.Clave" class="@(Model.Filtro == f.Clave ? "activo" : "")">@f.Texto<span class="num">@f.Cantidad</span></a>
+        }
+    </nav>
+</div>
+
+@if (!Model.Inscripciones.Any())
 {
-    <div class="caja text-secondary">Aún no te inscribes en ningún curso. Elige uno en el <a asp-action="Panel">panel principal</a>.</div>
+    <div class="tarjeta text-secondary">
+        @(Model.Total == 0
+            ? "Aún no te inscribes en ningún curso."
+            : "No tienes cursos en este estado.")
+        <a asp-action="Panel" asp-fragment="explorar">Explorar cursos</a>
+    </div>
 }
 else
 {
-    <div class="caja p-0 table-responsive">
-        <table class="table align-middle mb-0">
-            <thead><tr><th>Curso</th><th>Horas</th><th style="width:30%">Progreso</th><th></th></tr></thead>
-            <tbody>
-            @foreach (var i in Model)
-            {
-                <tr>
-                    <td>@i.Curso!.Titulo</td>
-                    <td>@i.Curso.Horas</td>
-                    <td>
-                        <div class="progress" role="progressbar" aria-valuenow="@i.Progreso" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso en @i.Curso.Titulo">
-                            <div class="progress-bar" style="width:@i.Progreso%"></div>
+    <div class="row g-4">
+        @foreach (var i in Model.Inscripciones)
+        {
+            var c = i.Curso!;
+            <div class="col-md-6 col-xl-4">
+                <div class="curso-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="chip-cat">@(c.Categoria ?? "General")</span>
+                        <span class="badge-estado @Calificacion.ClaseEstado(i.Progreso)">@Calificacion.Estado(i.Progreso)</span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(c.ImagenUrl))
+                    {
+                        <img src="@c.ImagenUrl" alt="" class="curso-img" loading="lazy" />
+                    }
+                    else
+                    {
+                        <div class="curso-img img-placeholder @Calificacion.ClaseCategoria(c.Categoria)" aria-hidden="true">
+                            <i class="bi @Calificacion.IconoCategoria(c.Categoria)"></i>
                         </div>
-                        <span class="small text-secondary">@i.Progreso %</span>
-                    </td>
-                    <td class="text-end">
+                    }
+
+                    <h3 class="curso-titulo mt-0">@c.Titulo</h3>
+                    <p class="curso-instructor">Instructor: @(c.Instructor ?? "Por asignar") · @c.Creditos créditos</p>
+
+                    <div class="curso-dato"><span class="etq">Progreso del programa</span><span class="val">@i.Progreso%</span></div>
+                    <div class="barra @(i.Progreso >= 100 ? "verde" : "")"><span style="width:@(i.Progreso)%"></span></div>
+
+                    <div class="curso-dato mb-3">
+                        <span class="etq"><i class="bi bi-award me-1"></i>Calificación actual</span>
+                        <span class="val">@Calificacion.Texto(i.Nota)</span>
+                    </div>
+
+                    <div class="curso-pie d-flex gap-2">
                         @if (i.Progreso < 100)
                         {
-                            <form asp-action="Avanzar" asp-route-id="@i.Id" method="post">
-                                <button type="submit" class="btn btn-outline-secondary btn-sm">Registrar avance</button>
+                            <form asp-action="Avanzar" asp-route-id="@i.Id" asp-route-estado="@Model.Filtro" method="post" class="flex-fill">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Registrar avance</button>
                             </form>
                         }
-                        else
-                        {
-                            <span class="badge text-bg-success">Completado</span>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+                        <a asp-action="Estudio" asp-route-cursoId="@c.Id" class="btn btn-light-borde btn-sm flex-fill">
+                            <i class="bi bi-stopwatch me-1"></i>Estudiar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 }

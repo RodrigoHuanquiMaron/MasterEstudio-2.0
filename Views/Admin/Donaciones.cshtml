@@ -1,0 +1,90 @@
+@model AdminDonacionesViewModel
+@{
+    ViewData["Title"] = "Donaciones";
+    var filtro = ViewData["Filtro"] as string;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Donaciones</h1>
+        <p class="page-sub">Cada mensaje se clasifica con un modelo de machine learning de análisis de sentimiento (Hugging Face).</p>
+    </div>
+    <form asp-action="AnalizarPendientes" method="post">
+        <button type="submit" class="btn btn-light-borde" disabled="@(Model.SinAnalizar == 0)">
+            <i class="bi bi-cpu"></i> Analizar pendientes (@Model.SinAnalizar)
+        </button>
+    </form>
+</div>
+
+@if (!Model.IaConfigurada)
+{
+    <div class="alert alert-warning">
+        El análisis de sentimiento no está activo: falta configurar <code>HuggingFace__Token</code>. Las donaciones nuevas quedarán "Sin analizar".
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <a asp-action="Donaciones" asp-route-sentimiento="@Sentimientos.Positiva" class="text-decoration-none">
+            <div class="kpi">
+                <div class="kpi-top"><span class="kpi-label">Positivas</span><span class="kpi-icono" style="background:var(--verde-suave);color:var(--verde)"><i class="bi bi-emoji-smile"></i></span></div>
+                <div class="kpi-valor">@Model.Positivas</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-action="Donaciones" asp-route-sentimiento="@Sentimientos.Negativa" class="text-decoration-none">
+            <div class="kpi">
+                <div class="kpi-top"><span class="kpi-label">Negativas</span><span class="kpi-icono" style="background:var(--rojo-suave);color:var(--rojo)"><i class="bi bi-emoji-frown"></i></span></div>
+                <div class="kpi-valor">@Model.Negativas</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-action="Donaciones" asp-route-sentimiento="@Sentimientos.Neutral" class="text-decoration-none">
+            <div class="kpi">
+                <div class="kpi-top"><span class="kpi-label">Neutrales</span><span class="kpi-icono"><i class="bi bi-emoji-neutral"></i></span></div>
+                <div class="kpi-valor">@Model.Neutrales</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-action="Donaciones" class="text-decoration-none">
+            <div class="kpi">
+                <div class="kpi-top"><span class="kpi-label">Todas</span><span class="kpi-icono"><i class="bi bi-list-ul"></i></span></div>
+                <div class="kpi-valor">@(Model.Positivas + Model.Negativas + Model.Neutrales + Model.SinAnalizar)</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(filtro))
+{
+    <p class="small">Mostrando donaciones <strong>@filtro.ToLowerInvariant()s</strong>. <a asp-action="Donaciones">Ver todas</a></p>
+}
+
+<div class="tarjeta p-0 table-responsive">
+    <table class="table align-middle mb-0">
+        <thead><tr><th class="ps-3">Fecha</th><th>Donante</th><th>Monto</th><th>Mensaje</th><th>Sentimiento</th><th class="pe-3">Confianza</th></tr></thead>
+        <tbody>
+            @if (!Model.Donaciones.Any())
+            {
+                <tr><td colspan="6" class="ps-3 text-secondary">No hay donaciones.</td></tr>
+            }
+            @foreach (var d in Model.Donaciones)
+            {
+                <tr>
+                    <td class="ps-3">@d.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @(d.Usuario?.NombreCompleto ?? "—")
+                        @if (d.Anonima) { <span class="small text-secondary">(anónima)</span> }
+                    </td>
+                    <td>S/ @d.Monto.ToString("N2")</td>
+                    <td class="small">@(d.Mensaje ?? "—")</td>
+                    <td><span class="badge-sent @Calificacion.ClaseSentimiento(d.Sentimiento)">@(d.Sentimiento ?? Sentimientos.SinAnalizar)</span></td>
+                    <td class="pe-3 small">@(d.SentimientoConfianza.HasValue ? (d.SentimientoConfianza.Value * 100).ToString("0") + "%" : "—")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

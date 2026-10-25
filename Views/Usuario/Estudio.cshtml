@@ -1,0 +1,174 @@
+@model EstudioViewModel
+@{ ViewData["Title"] = "Cronómetro de estudio"; }
+
+<div class="page-head">
+    <div>
+        <h1>Cronómetro de estudio</h1>
+        <p class="page-sub">Hoy llevas @Calificacion.Duracion(Model.SegundosHoy) de estudio. Cada sesión que guardes suma a tus horas estudiadas.</p>
+    </div>
+</div>
+
+@if (!Model.Cursos.Any())
+{
+    <div class="tarjeta text-secondary">
+        Para usar el cronómetro primero inscríbete en un curso. <a asp-action="Panel" asp-fragment="explorar">Explorar cursos</a>
+    </div>
+}
+else
+{
+    <div class="cronometro mb-4">
+        <form id="form-sesion" class="d-flex flex-wrap justify-content-center align-items-center gap-2" onsubmit="return false;">
+            @Html.AntiForgeryToken()
+            <label for="cursoId" class="small text-white-50">Estoy estudiando</label>
+            <select id="cursoId" name="cursoId" class="form-select form-select-sm cronometro-select">
+                @foreach (var c in Model.Cursos)
+                {
+                    if (c.Id == Model.CursoId)
+                    {
+                        <option value="@c.Id" selected>@c.Titulo</option>
+                    }
+                    else
+                    {
+                        <option value="@c.Id">@c.Titulo</option>
+                    }
+                }
+            </select>
+        </form>
+
+        <div class="cronometro-display" id="display">00:00<span class="cs">.00</span></div>
+
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <button type="button" id="btn-iniciar" class="btn btn-crono btn-crono-iniciar"><i class="bi bi-play-fill"></i> Iniciar</button>
+            <button type="button" id="btn-pausar" class="btn btn-crono btn-crono-pausar" disabled><i class="bi bi-pause-fill"></i> Pausar</button>
+            <button type="button" id="btn-guardar" class="btn btn-crono btn-crono-guardar" disabled><i class="bi bi-check2"></i> Terminar y guardar</button>
+            <button type="button" id="btn-reiniciar" class="btn btn-crono btn-crono-sec" disabled><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
+        </div>
+        <p id="estado-crono" class="text-center small text-white-50 mt-3 mb-0" role="status" aria-live="polite"></p>
+    </div>
+}
+
+<div class="tarjeta">
+    <h2 class="tarjeta-titulo mb-2">Sesiones recientes</h2>
+    @if (!Model.Recientes.Any())
+    {
+        <p class="small text-secondary mb-0">Aún no registras sesiones de estudio.</p>
+    }
+    else
+    {
+        <ul class="actividades">
+            @foreach (var s in Model.Recientes)
+            {
+                <li class="actividad">
+                    <span class="actividad-icono"><i class="bi bi-stopwatch"></i></span>
+                    <div>
+                        <div class="actividad-texto">@Calificacion.Duracion(s.Segundos) · @s.Curso?.Titulo</div>
+                        <div class="actividad-fecha">@s.Inicio.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('form-sesion');
+            if (!form) return;
+
+            const display = document.getElementById('display');
+            const estado = document.getElementById('estado-crono');
+            const bIniciar = document.getElementById('btn-iniciar');
+            const bPausar = document.getElementById('btn-pausar');
+            const bGuardar = document.getElementById('btn-guardar');
+            const bReiniciar = document.getElementById('btn-reiniciar');
+            const urlGuardar = '@Url.Action("GuardarSesion", "Usuario")';
+
+            let inicio = null;      // momento en que se inició el tramo actual
+            let acumulado = 0;      // milisegundos de tramos anteriores
+            let intervalo = null;
+
+            const dos = n => String(n).padStart(2, '0');
+            const transcurrido = () => acumulado + (inicio ? performance.now() - inicio : 0);
+
+            function pintar() {
+                const t = transcurrido();
+                const h = Math.floor(t / 3600000);
+                const m = Math.floor(t / 60000) % 60;
+                const s = Math.floor(t / 1000) % 60;
+                const cs = Math.floor(t / 10) % 100;
+                display.innerHTML = (h > 0 ? dos(h) + ':' : '') + dos(m) + ':' + dos(s) + '<span class="cs">.' + dos(cs) + '</span>';
+            }
+
+            function botones(corriendo) {
+                bIniciar.disabled = corriendo;
+                bPausar.disabled = !corriendo;
+                bGuardar.disabled = transcurrido() === 0 && !corriendo;
+                bReiniciar.disabled = corriendo || transcurrido() === 0;
+                form.cursoId.disabled = corriendo;
+            }
+
+            function pausar() {
+                if (!inicio) return;
+                acumulado = transcurrido();
+                inicio = null;
+                clearInterval(intervalo);
+                pintar();
+            }
+
+            bIniciar.addEventListener('click', () => {
+                inicio = performance.now();
+                intervalo = setInterval(pintar, 50);
+                estado.textContent = 'Estudiando… cuando termines pulsa "Terminar y guardar".';
+                botones(true);
+            });
+
+            bPausar.addEventListener('click', () => {
+                pausar();
+                estado.textContent = 'En pausa.';
+                botones(false);
+            });
+
+            bReiniciar.addEventListener('click', () => {
+                acumulado = 0;
+                pintar();
+                estado.textContent = '';
+                botones(false);
+            });
+
+            bGuardar.addEventListener('click', async () => {
+                pausar();
+                const segundos = Math.round(transcurrido() / 1000);
+                if (segundos < 5) {
+                    estado.textContent = 'La sesión debe durar al menos 5 segundos.';
+                    botones(false);
+                    return;
+                }
+                form.cursoId.disabled = false;
+                const datos = new FormData(form);
+                datos.append('segundos', segundos);
+                bGuardar.disabled = true;
+                estado.textContent = 'Guardando…';
+                try {
+                    const respuesta = await fetch(urlGuardar, { method: 'POST', body: datos });
+                    const json = await respuesta.json();
+                    estado.textContent = json.mensaje;
+                    if (json.ok) {
+                        acumulado = 0;
+                        pintar();
+                    }
+                } catch {
+                    estado.textContent = 'No se pudo guardar la sesión. Revisa tu conexión e inténtalo de nuevo.';
+                }
+                botones(false);
+            });
+
+            // Avisa si se intenta salir con el cronómetro en marcha
+            window.addEventListener('beforeunload', e => {
+                if (inicio || acumulado > 0) { e.preventDefault(); e.returnValue = ''; }
+            });
+
+            botones(false);
+        })();
+    </script>
+}

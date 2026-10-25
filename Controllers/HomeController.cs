@@ -7,7 +7,7 @@ namespace PlataformaCursos.Controllers;
 
 public class HomeController : Controller
 {
-    // Envía a cada rol a su propio panel
+    // Envía a cada rol a su propio panel; los visitantes van al login
     public IActionResult Index()
     {
         if (User.IsInRole(SeedData.RolAdmin))
@@ -16,7 +16,7 @@ public class HomeController : Controller
         if (User.IsInRole(SeedData.RolUsuario))
             return RedirectToAction("Panel", "Usuario");
 
-        return View(); // página de bienvenida para visitantes
+        return RedirectToAction("Login", "Cuenta");
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

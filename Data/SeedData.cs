@@ -76,5 +76,30 @@ public static class SeedData
             );
             await db.SaveChangesAsync();
         }
+
+        // 4. Completa instructor, categoría y créditos de los cursos de prueba que aún no los tienen
+        var detalles = new Dictionary<string, (string Instructor, string Categoria, int Creditos)>
+        {
+            ["Introducción a C#"] = ("Ing. Roberto Gómez", "Tecnología", 4),
+            ["ASP.NET Core MVC"] = ("Mg. Alan García", "Tecnología", 4),
+            ["Bases de datos con SQL"] = ("Dra. Alicia Méndez", "Tecnología", 3)
+        };
+
+        var sinDetalle = await db.Cursos.Where(c => c.Categoria == null).ToListAsync();
+        foreach (var curso in sinDetalle)
+        {
+            if (detalles.TryGetValue(curso.Titulo, out var d))
+            {
+                curso.Instructor ??= d.Instructor;
+                curso.Categoria = d.Categoria;
+                curso.Creditos = d.Creditos;
+            }
+            else if (curso.Creditos < 1)
+            {
+                curso.Creditos = 3;
+            }
+        }
+        if (sinDetalle.Count > 0)
+            await db.SaveChangesAsync();
     }
 }

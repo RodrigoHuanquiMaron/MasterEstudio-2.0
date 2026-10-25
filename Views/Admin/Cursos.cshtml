@@ -1,32 +1,53 @@
 @model List<Curso>
 @{ ViewData["Title"] = "Cursos"; }
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Cursos</h1>
-    <a class="btn btn-primary" asp-action="CrearCurso">Agregar curso</a>
+
+<div class="page-head">
+    <div>
+        <h1>Cursos</h1>
+        <p class="page-sub">@Model.Count cursos publicados</p>
+    </div>
+    <a class="btn btn-primary" asp-action="CrearCurso"><i class="bi bi-plus-lg"></i> Agregar curso</a>
 </div>
 
-<div class="caja p-0 table-responsive">
+<div class="tarjeta p-0 table-responsive">
     <table class="table align-middle mb-0">
-        <thead><tr><th>Título</th><th>Horas</th><th>Inscritos</th><th>Creado</th><th></th></tr></thead>
+        <thead><tr><th class="ps-3">Curso</th><th>Categoría</th><th>Instructor</th><th>Horas</th><th>Créditos</th><th>Inscritos</th><th></th></tr></thead>
         <tbody>
-        @foreach (var c in Model)
-        {
-            <tr>
-                <td>
-                    <div class="fw-semibold">@c.Titulo</div>
-                    <div class="small text-secondary">@c.Descripcion</div>
-                </td>
-                <td>@c.Horas</td>
-                <td>@c.Inscripciones.Count</td>
-                <td>@c.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                <td class="text-end">
-                    <form asp-action="EliminarCurso" asp-route-id="@c.Id" method="post"
-                          onsubmit="return confirm('¿Eliminar este curso? También se eliminarán sus inscripciones.');">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
-                    </form>
-                </td>
-            </tr>
-        }
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td class="ps-3">
+                        <div class="d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrEmpty(c.ImagenUrl))
+                            {
+                                <img src="@c.ImagenUrl" alt="" class="img-mini" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="img-mini img-placeholder @Calificacion.ClaseCategoria(c.Categoria)" style="font-size:1rem"><i class="bi @Calificacion.IconoCategoria(c.Categoria)"></i></span>
+                            }
+                            <div>
+                                <div class="fw-semibold">@c.Titulo</div>
+                                <div class="small text-secondary">@c.Descripcion</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>@(c.Categoria ?? "—")</td>
+                    <td>@(c.Instructor ?? "—")</td>
+                    <td>@c.Horas</td>
+                    <td>@c.Creditos</td>
+                    <td>@c.Inscripciones.Count</td>
+                    <td class="text-end pe-3">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a asp-action="EditarCurso" asp-route-id="@c.Id" class="btn btn-light-borde btn-sm">Editar</a>
+                            <form asp-action="EliminarCurso" asp-route-id="@c.Id" method="post"
+                                  onsubmit="return confirm('¿Eliminar este curso? También se eliminarán sus inscripciones y sesiones de estudio.');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
