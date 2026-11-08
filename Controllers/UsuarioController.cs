@@ -32,6 +32,7 @@ public class UsuarioController : Controller
 
     private Task<List<Curso>> LeerCatalogoAsync() =>
         _db.Cursos
+            .Where(c => c.PropietarioId == null)
             .OrderBy(c => c.Titulo)
             .Select(c => new Curso
             {
@@ -69,7 +70,10 @@ public class UsuarioController : Controller
                     Instructor = i.Curso.Instructor,
                     Categoria = i.Curso.Categoria,
                     ImagenUrl = i.Curso.ImagenUrl,
-                    Creditos = i.Curso.Creditos
+                    Creditos = i.Curso.Creditos,
+                    PropietarioId = i.Curso.PropietarioId,
+                    UrlExterna = i.Curso.UrlExterna,
+                    Plataforma = i.Curso.Plataforma
                 }
             })
             .ToListAsync();
@@ -199,7 +203,7 @@ public class UsuarioController : Controller
     public async Task<IActionResult> Inscribirse(int cursoId)
     {
         var id = UsuarioId;
-        var existeCurso = await _db.Cursos.AnyAsync(c => c.Id == cursoId);
+        var existeCurso = await _db.Cursos.AnyAsync(c => c.Id == cursoId && c.PropietarioId == null);
         var yaInscrito = await _db.Inscripciones.AnyAsync(i => i.UsuarioId == id && i.CursoId == cursoId);
 
         if (existeCurso && !yaInscrito)
@@ -254,6 +258,134 @@ public class UsuarioController : Controller
             await _cache.InvalidarUsuarioAsync(usuarioId);
         }
         return RedirectToAction(nameof(MisCursos), new { estado });
+    }
+
+    // ---------- Cursos personales (externos) ----------
+
+    [HttpGet]
+    public IActionResult NuevoCursoPersonal() => View("FormCursoPersonal", new CursoPersonalViewModel());
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> NuevoCursoPersonal(CursoPersonalViewModel model)
+    {
+        if (!ModelState.IsValid) return View("FormCursoPersonal", model);
+
+        var id = UsuarioId;
+        var curso = new Curso
+        {
+            Titulo = model.Titulo,
+            Descripcion = model.Descripcion,
+            Plataforma = model.Plataforma,
+            UrlExterna = model.UrlExterna,
+            Instructor = model.Instructor,
+            Categoria = model.Categoria,
+            Horas = model.Horas,
+            Creditos = 0,              // los cursos personales no suman créditos académicos
+            PropietarioId = id
+        };
+
+        // El alumno queda inscrito automáticamente en su propio curso
+        curso.Inscripciones.Add(new Inscripcion { UsuarioId = id });
+        _db.Cursos.Add(curso);
+        await _db.SaveChangesAsync();
+        await _cache.InvalidarUsuarioAsync(id);
+
+        TempData["Mensaje"] = $"Agregaste tu curso \"{curso.Titulo}\". Ya puedes registrar tu avance y estudiarlo con el cronómetro.";
+        return RedirectToAction(nameof(MisCursos));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditarCursoPersonal(int id)
+    {
+        var curso = await _db.Cursos.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id && c.PropietarioId == UsuarioId);
+        if (curso is null) return NotFound();
+
+        return View("FormCursoPersonal", new CursoPersonalViewModel
+        {
+            Id = curso.Id,
+            Titulo = curso.Titulo,
+            Descripcion = curso.Descripcion,
+            Plataforma = curso.Plataforma,
+            UrlExterna = curso.UrlExterna,
+            Instructor = curso.Instructor,
+            Categoria = curso.Categoria,
+            Horas = curso.Horas
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditarCursoPersonal(int id, CursoPersonalViewModel model)
+    {
+        var usuarioId = UsuarioId;
+        var curso = await _db.Cursos.FirstOrDefaultAsync(c => c.Id == id && c.PropietarioId == usuarioId);
+        if (curso is null) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            model.Id = id;
+            return View("FormCursoPersonal", model);
+        }
+
+        curso.Titulo = model.Titulo;
+        curso.Descripcion = model.Descripcion;
+        curso.Plataforma = model.Plataforma;
+        curso.UrlExterna = model.UrlExterna;
+        curso.Instructor = model.Instructor;
+        curso.Categoria = model.Categoria;
+        curso.Horas = model.Horas;
+        await _db.SaveChangesAsync();
+        await _cache.InvalidarUsuarioAsync(usuarioId);
+
+        TempData["Mensaje"] = $"Curso \"{curso.Titulo}\" actualizado.";
+        return RedirectToAction(nameof(MisCursos));
+    }
+
+    // El alumno registra su propio progreso y nota en un curso personal
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActualizarCursoPersonal(int id, int progreso, decimal? nota, string? estado)
+    {
+        var usuarioId = UsuarioId;
+        var inscripcion = await _db.Inscripciones
+            .Include(i => i.Curso)
+            .FirstOrDefaultAsync(i => i.CursoId == id && i.UsuarioId == usuarioId && i.Curso!.PropietarioId == usuarioId);
+        if (inscripcion is null) return NotFound();
+
+        if (progreso < 0 || progreso > 100 || (nota.HasValue && (nota < 0 || nota > 100)))
+        {
+            TempData["Error"] = "El progreso y la nota deben estar entre 0 y 100.";
+            return RedirectToAction(nameof(MisCursos), new { estado });
+        }
+
+        inscripcion.Progreso = progreso;
+        if (inscripcion.Nota != nota)
+        {
+            inscripcion.Nota = nota.HasValue ? Math.Round(nota.Value, 1) : null;
+            inscripcion.FechaCalificacion = nota.HasValue ? DateTime.UtcNow : null;
+        }
+        await _db.SaveChangesAsync();
+        await _cache.InvalidarUsuarioAsync(usuarioId);
+
+        TempData["Mensaje"] = $"Avance de \"{inscripcion.Curso?.Titulo}\" guardado.";
+        return RedirectToAction(nameof(MisCursos), new { estado });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarCursoPersonal(int id)
+    {
+        var usuarioId = UsuarioId;
+        var curso = await _db.Cursos.FirstOrDefaultAsync(c => c.Id == id && c.PropietarioId == usuarioId);
+        if (curso is null) return NotFound();
+
+        _db.Cursos.Remove(curso);   // su inscripción y sus sesiones de estudio se borran en cascada
+        await _db.SaveChangesAsync();
+        await _cache.InvalidarUsuarioAsync(usuarioId);
+
+        TempData["Mensaje"] = $"Eliminaste tu curso \"{curso.Titulo}\".";
+        return RedirectToAction(nameof(MisCursos));
     }
 
     // ---------- Desempeño ----------

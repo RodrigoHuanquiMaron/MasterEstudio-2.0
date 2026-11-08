@@ -37,7 +37,7 @@ public class AdminController : Controller
             return new ResumenAdminViewModel
             {
                 TotalUsuarios = await _db.Users.CountAsync(),
-                TotalCursos = await _db.Cursos.CountAsync(),
+                TotalCursos = await _db.Cursos.CountAsync(c => c.PropietarioId == null),
                 TotalInscripciones = await _db.Inscripciones.CountAsync(),
                 TotalDonado = montos.Sum(),
                 DonacionesPositivas = await _db.Donaciones.CountAsync(d => d.Sentimiento == Sentimientos.Positiva),
@@ -123,7 +123,9 @@ public class AdminController : Controller
     // ---------- Cursos ----------
     public async Task<IActionResult> Cursos()
     {
+        // Solo cursos oficiales; los personales los gestiona cada alumno
         var cursos = await _db.Cursos
+            .Where(c => c.PropietarioId == null)
             .Include(c => c.Inscripciones)
             .OrderBy(c => c.Titulo)
             .ToListAsync();
@@ -160,7 +162,7 @@ public class AdminController : Controller
     public async Task<IActionResult> EditarCurso(int id)
     {
         var curso = await _db.Cursos.FindAsync(id);
-        if (curso is null) return NotFound();
+        if (curso is null || curso.EsPersonal) return NotFound();
 
         ViewData["Accion"] = nameof(EditarCurso);
         return View("FormCurso", curso);
@@ -171,7 +173,7 @@ public class AdminController : Controller
     public async Task<IActionResult> EditarCurso(int id, [Bind("Titulo,Descripcion,Horas,Instructor,Categoria,ImagenUrl,Creditos")] Curso datos)
     {
         var curso = await _db.Cursos.FindAsync(id);
-        if (curso is null) return NotFound();
+        if (curso is null || curso.EsPersonal) return NotFound();
 
         if (!ModelState.IsValid)
         {
@@ -200,7 +202,7 @@ public class AdminController : Controller
     public async Task<IActionResult> EliminarCurso(int id)
     {
         var curso = await _db.Cursos.FindAsync(id);
-        if (curso is null) return NotFound();
+        if (curso is null || curso.EsPersonal) return NotFound();
 
         _db.Cursos.Remove(curso);                                                    // inscripciones y sesiones se borran en cascada
         await _db.SaveChangesAsync();                                                // 1. PostgreSQL

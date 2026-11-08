@@ -1,0 +1,150 @@
+@model TalleresViewModel
+@{
+    ViewData["Title"] = "Talleres";
+    var esAlumno = User.IsInRole("Usuario");
+}
+
+<div class="page-head">
+    <div>
+        <h1>Talleres</h1>
+        <p class="page-sub">Sesiones prácticas abiertas a toda la comunidad. Inscríbete y asegura tu cupo.</p>
+    </div>
+    @if (User.IsInRole("Administrador"))
+    {
+        <a asp-action="Gestionar" class="btn btn-light-borde"><i class="bi bi-gear"></i> Gestionar talleres</a>
+    }
+</div>
+
+<form id="form-busqueda" asp-action="Index" method="get" class="buscador mb-2" role="search">
+    <i class="bi bi-search buscador-icono" aria-hidden="true"></i>
+    <input id="q" name="q" value="@Model.Busqueda" type="search" class="form-control" autocomplete="off"
+           placeholder="Busca por tema, facilitador o categoría: git, excel, estudio..." aria-label="Buscar talleres" />
+    <select name="modalidad" class="form-select" aria-label="Modalidad">
+        <option value="">Todas las modalidades</option>
+        @foreach (var m in Taller.Modalidades)
+        {
+            if (m == Model.Modalidad)
+            {
+                <option value="@m" selected>@m</option>
+            }
+            else
+            {
+                <option value="@m">@m</option>
+            }
+        }
+    </select>
+    <button type="submit" class="btn btn-primary">Buscar</button>
+</form>
+
+<div id="resultados">
+    <p class="small text-secondary mb-4">
+        @if (!string.IsNullOrEmpty(Model.Busqueda))
+        {
+            <text>@Model.Talleres.Count resultados para "@Model.Busqueda"</text>
+            <span class="origen-busqueda ms-2">
+                @if (Model.Origen == "Algolia")
+                {
+                    <i class="bi bi-lightning-charge-fill"></i><text> Búsqueda con Algolia</text>
+                }
+                else
+                {
+                    <i class="bi bi-database"></i><text> Búsqueda en la base de datos</text>
+                }
+            </span>
+            <a asp-action="Index" class="ms-2">Limpiar</a>
+        }
+        else
+        {
+            <text>@Model.Talleres.Count talleres disponibles</text>
+        }
+    </p>
+
+    @if (!Model.Talleres.Any())
+    {
+        <div class="tarjeta text-secondary mb-4">No encontramos talleres con esa búsqueda. Prueba con otra palabra.</div>
+    }
+    else
+    {
+        <div class="row g-4 mb-5">
+            @foreach (var t in Model.Talleres)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <partial name="_TallerTarjeta" model="t" view-data='@(new ViewDataDictionary(ViewData) { ["Q"] = Model.Busqueda, ["Mod"] = Model.Modalidad, ["EsAlumno"] = esAlumno })' />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (esAlumno && Model.MisTalleres.Any())
+{
+    <h2 class="seccion mb-3">Mis talleres</h2>
+    <div class="tarjeta p-0 table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th class="ps-3">Taller</th><th>Fecha</th><th>Modalidad</th><th>Lugar</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.MisTalleres)
+                {
+                    <tr>
+                        <td class="ps-3 fw-semibold">@t.Taller.Titulo</td>
+                        <td>@t.Taller.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@t.Taller.Modalidad</td>
+                        <td>@(t.Taller.Lugar ?? "—")</td>
+                        <td class="pe-3 text-end">
+                            @if (t.Pasado)
+                            {
+                                <span class="badge-estado estado-completado">Realizado</span>
+                            }
+                            else
+                            {
+                                <form asp-action="Cancelar" asp-route-id="@t.Taller.Id" method="post"
+                                      onsubmit="return confirm('¿Cancelar tu inscripción en este taller?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Cancelar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Búsqueda mientras escribes: pide la misma página al servidor (que consulta Algolia)
+        // y reemplaza solo los resultados. Las claves de Algolia nunca llegan al navegador.
+        (function () {
+            const form = document.getElementById('form-busqueda');
+            const input = document.getElementById('q');
+            const resultados = document.getElementById('resultados');
+            if (!form || !input || !resultados) return;
+
+            let espera = null;
+            let ultima = input.value;
+
+            async function buscar() {
+                const params = new URLSearchParams(new FormData(form));
+                const url = form.action + '?' + params.toString();
+                try {
+                    const respuesta = await fetch(url, { cache: 'no-store' });
+                    if (!respuesta.ok) return;
+                    const html = await respuesta.text();
+                    const nuevo = new DOMParser().parseFromString(html, 'text/html').getElementById('resultados');
+                    if (nuevo) resultados.innerHTML = nuevo.innerHTML;
+                    history.replaceState(null, '', url);
+                } catch (e) {
+                    console.warn('No se pudo buscar', e);
+                }
+            }
+
+            input.addEventListener('input', () => {
+                if (input.value === ultima) return;
+                ultima = input.value;
+                clearTimeout(espera);
+                espera = setTimeout(buscar, 300);
+            });
+            form.modalidad.addEventListener('change', buscar);
+        })();
+    </script>
+}

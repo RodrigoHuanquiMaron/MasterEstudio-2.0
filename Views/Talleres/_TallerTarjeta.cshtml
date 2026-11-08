@@ -1,0 +1,66 @@
+@model TallerTarjetaViewModel
+@{
+    var t = Model.Taller;
+    var esAlumno = ViewData["EsAlumno"] as bool? ?? false;
+    var q = ViewData["Q"] as string;
+    var mod = ViewData["Mod"] as string;
+    var icono = t.Modalidad == "Presencial" ? "bi-geo-alt" : t.Modalidad == "Híbrido" ? "bi-diagram-2" : "bi-camera-video";
+}
+<div class="curso-card">
+    <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+        <span class="chip-cat">@(t.Categoria ?? "Taller")</span>
+        <span class="badge-estado estado-encurso"><i class="bi @icono"></i> @t.Modalidad</span>
+    </div>
+
+    @if (!string.IsNullOrEmpty(t.ImagenUrl))
+    {
+        <img src="@t.ImagenUrl" alt="" class="curso-img" loading="lazy" />
+    }
+    else
+    {
+        <div class="curso-img img-placeholder taller-fecha @Calificacion.ClaseCategoria(t.Categoria)" aria-hidden="true">
+            <span class="dia">@t.Fecha.ToLocalTime().ToString("dd")</span>
+            <span class="mes">@t.Fecha.ToLocalTime().ToString("MMM").ToUpperInvariant()</span>
+        </div>
+    }
+
+    <h3 class="curso-titulo mt-0">@t.Titulo</h3>
+    <p class="curso-instructor mb-2">Facilitador: @(t.Facilitador ?? "Por confirmar")</p>
+    <p class="small text-secondary flex-grow-1">@t.Descripcion</p>
+
+    <div class="curso-dato py-1"><span class="etq"><i class="bi bi-calendar-event me-1"></i>Fecha</span><span class="val">@t.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span></div>
+    <div class="curso-dato py-1"><span class="etq"><i class="bi bi-hourglass-split me-1"></i>Duración</span><span class="val">@t.DuracionMinutos min</span></div>
+    <div class="curso-dato py-1"><span class="etq"><i class="bi bi-pin-map me-1"></i>Lugar</span><span class="val text-end">@(t.Lugar ?? "Por confirmar")</span></div>
+    <div class="curso-dato pt-1"><span class="etq"><i class="bi bi-people me-1"></i>Cupos</span><span class="val">@Model.CuposLibres de @t.Cupos libres</span></div>
+    <div class="barra"><span style="width:@(t.Cupos == 0 ? 0 : Model.Inscritos * 100 / t.Cupos)%"></span></div>
+
+    <div class="curso-pie">
+        @if (Model.Pasado)
+        {
+            <span class="badge-estado estado-noiniciado">Taller realizado</span>
+        }
+        else if (!esAlumno)
+        {
+            <span class="small text-secondary">@Model.Inscritos inscritos</span>
+        }
+        else if (Model.YoInscrito)
+        {
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge-estado estado-completado"><i class="bi bi-check2"></i> Inscrito</span>
+                <form asp-controller="Talleres" asp-action="Cancelar" asp-route-id="@t.Id" asp-route-q="@q" asp-route-modalidad="@mod" method="post">
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">Cancelar</button>
+                </form>
+            </div>
+        }
+        else if (Model.CuposLibres == 0)
+        {
+            <button type="button" class="btn btn-light-borde btn-sm w-100" disabled>Sin cupos</button>
+        }
+        else
+        {
+            <form asp-controller="Talleres" asp-action="Inscribirse" asp-route-id="@t.Id" asp-route-q="@q" asp-route-modalidad="@mod" method="post">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Inscribirme</button>
+            </form>
+        }
+    </div>
+</div>

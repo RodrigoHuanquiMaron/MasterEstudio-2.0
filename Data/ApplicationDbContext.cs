@@ -13,6 +13,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<Inscripcion> Inscripciones => Set<Inscripcion>();
     public DbSet<Donacion> Donaciones => Set<Donacion>();
     public DbSet<SesionEstudio> SesionesEstudio => Set<SesionEstudio>();
+    public DbSet<Taller> Talleres => Set<Taller>();
+    public DbSet<InscripcionTaller> InscripcionesTaller => Set<InscripcionTaller>();
 
     // Llaves que cifran las cookies (así sobreviven a cada despliegue en Render)
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -21,12 +23,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     {
         base.OnModelCreating(builder);
 
-        // Un usuario no puede inscribirse dos veces al mismo curso
+        // ----- Cursos -----
+        // Cursos personales: si se borra el alumno, se borran sus cursos
+        builder.Entity<Curso>()
+            .HasOne(c => c.Propietario)
+            .WithMany()
+            .HasForeignKey(c => c.PropietarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Curso>().HasIndex(c => c.PropietarioId);
+
+        // ----- Inscripciones -----
         builder.Entity<Inscripcion>()
             .HasIndex(i => new { i.UsuarioId, i.CursoId })
             .IsUnique();
 
-        // Al eliminar un curso se eliminan sus inscripciones
         builder.Entity<Inscripcion>()
             .HasOne(i => i.Curso)
             .WithMany(c => c.Inscripciones)
@@ -38,9 +49,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
             .WithMany(u => u.Inscripciones)
             .HasForeignKey(i => i.UsuarioId);
 
-        // Nota de 0.00 a 100.00
         builder.Entity<Inscripcion>().Property(i => i.Nota).HasPrecision(5, 2);
 
+        // ----- Donaciones -----
         builder.Entity<Donacion>()
             .HasOne(d => d.Usuario)
             .WithMany(u => u.Donaciones)
@@ -48,7 +59,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
 
         builder.Entity<Donacion>().Property(d => d.Monto).HasPrecision(10, 2);
 
-        // Sesiones de estudio (cronómetro)
+        // ----- Sesiones de estudio -----
         builder.Entity<SesionEstudio>()
             .HasOne(s => s.Usuario)
             .WithMany(u => u.SesionesEstudio)
@@ -63,5 +74,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
 
         builder.Entity<SesionEstudio>()
             .HasIndex(s => new { s.UsuarioId, s.Inicio });
+
+        // ----- Talleres -----
+        builder.Entity<InscripcionTaller>()
+            .HasIndex(i => new { i.UsuarioId, i.TallerId })
+            .IsUnique();
+
+        builder.Entity<InscripcionTaller>()
+            .HasOne(i => i.Taller)
+            .WithMany(t => t.Inscripciones)
+            .HasForeignKey(i => i.TallerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<InscripcionTaller>()
+            .HasOne(i => i.Usuario)
+            .WithMany()
+            .HasForeignKey(i => i.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

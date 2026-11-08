@@ -101,5 +101,50 @@ public static class SeedData
         }
         if (sinDetalle.Count > 0)
             await db.SaveChangesAsync();
+
+        // 5. Talleres de prueba
+        if (!await db.Talleres.AnyAsync())
+        {
+            var hoy = DateTime.UtcNow.Date;
+            db.Talleres.AddRange(
+                new Taller
+                {
+                    Titulo = "Git y GitHub desde cero",
+                    Descripcion = "Ramas, commits, pull requests y resolución de conflictos con ejemplos reales.",
+                    Facilitador = "Mg. Alan García",
+                    Categoria = "Tecnología",
+                    Modalidad = "Virtual",
+                    Lugar = "Google Meet",
+                    Fecha = hoy.AddDays(5).AddHours(23),
+                    DuracionMinutos = 120,
+                    Cupos = 40
+                },
+                new Taller
+                {
+                    Titulo = "Técnicas de estudio y concentración",
+                    Descripcion = "Método Pomodoro, mapas mentales y planificación semanal para rendir mejor en los exámenes.",
+                    Facilitador = "Lic. Ana Lucía Torres",
+                    Categoria = "Otros",
+                    Modalidad = "Presencial",
+                    Lugar = "Auditorio principal",
+                    Fecha = hoy.AddDays(9).AddHours(20),
+                    DuracionMinutos = 90,
+                    Cupos = 60
+                },
+                new Taller
+                {
+                    Titulo = "Excel para contabilidad",
+                    Descripcion = "Fórmulas, tablas dinámicas y gráficos aplicados a estados financieros.",
+                    Facilitador = "CPC. Carlos Mendoza",
+                    Categoria = "Contabilidad",
+                    Modalidad = "Híbrido",
+                    Lugar = "Laboratorio 3 / Zoom",
+                    Fecha = hoy.AddDays(14).AddHours(22),
+                    DuracionMinutos = 150,
+                    Cupos = 25
+                }
+            );
+            await db.SaveChangesAsync();
+        }
     }
 }

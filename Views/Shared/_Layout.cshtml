@@ -10,6 +10,10 @@
         string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), controller, StringComparison.OrdinalIgnoreCase) &&
         string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), action, StringComparison.OrdinalIgnoreCase)
             ? "activo" : "";
+
+    string ActivoControlador(string controller) =>
+        string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), controller, StringComparison.OrdinalIgnoreCase)
+            ? "activo" : "";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -43,12 +47,14 @@
                             <li class="nav-item"><a class="nav-link @Activo("Admin", "Usuarios")" asp-controller="Admin" asp-action="Usuarios">Usuarios</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Admin", "Cursos")" asp-controller="Admin" asp-action="Cursos">Cursos</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Admin", "Donaciones")" asp-controller="Admin" asp-action="Donaciones">Donaciones</a></li>
+                            <li class="nav-item"><a class="nav-link @ActivoControlador("Talleres")" asp-controller="Talleres" asp-action="Gestionar">Talleres</a></li>
                         }
                         else if (User.IsInRole("Usuario"))
                         {
                             <li class="nav-item"><a class="nav-link @Activo("Usuario", "Panel")" asp-controller="Usuario" asp-action="Panel">Panel</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Usuario", "MisCursos")" asp-controller="Usuario" asp-action="MisCursos">Mis Cursos</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Usuario", "Desempeno")" asp-controller="Usuario" asp-action="Desempeno">Desempeño</a></li>
+                            <li class="nav-item"><a class="nav-link @ActivoControlador("Talleres")" asp-controller="Talleres" asp-action="Index">Talleres</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Usuario", "Donaciones")" asp-controller="Usuario" asp-action="Donaciones">Donaciones</a></li>
                             <li class="nav-item"><a class="nav-link @Activo("Usuario", "Estudio")" asp-controller="Usuario" asp-action="Estudio"><i class="bi bi-stopwatch me-1"></i>Estudiar</a></li>
                         }

@@ -1,0 +1,67 @@
+@model CursoPersonalViewModel
+@{
+    var esEdicion = Model.Id.HasValue;
+    ViewData["Title"] = esEdicion ? "Editar curso externo" : "Agregar curso externo";
+}
+
+<a asp-action="MisCursos" class="link-sm"><i class="bi bi-arrow-left"></i> Volver a Mis Cursos</a>
+
+<div class="tarjeta mt-3" style="max-width:760px">
+    <h1 class="h4 fw-bold mb-1">@ViewData["Title"]</h1>
+    <p class="text-secondary small mb-4">
+        Registra un curso que llevas por tu cuenta (YouTube, Udemy, un libro...). Podrás marcar tu avance, ponerte una nota
+        y medir tus horas con el cronómetro. Solo tú lo ves.
+    </p>
+
+    <form asp-action="@(esEdicion ? "EditarCursoPersonal" : "NuevoCursoPersonal")" asp-route-id="@(Model.Id?.ToString())" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+
+        <div class="mb-3">
+            <label asp-for="Titulo" class="form-label small fw-semibold"></label>
+            <input asp-for="Titulo" class="form-control" placeholder="Python para principiantes" />
+            <span asp-validation-for="Titulo" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Descripcion" class="form-label small fw-semibold"></label>
+            <textarea asp-for="Descripcion" class="form-control" rows="2" placeholder="Quiero reforzar lo que vimos en Programación I"></textarea>
+            <span asp-validation-for="Descripcion" class="text-danger small"></span>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-5">
+                <label asp-for="Plataforma" class="form-label small fw-semibold"></label>
+                <select asp-for="Plataforma" asp-items="@(new SelectList(Curso.Plataformas))" class="form-select">
+                    <option value="">Elige</option>
+                </select>
+            </div>
+            <div class="col-md-7">
+                <label asp-for="UrlExterna" class="form-label small fw-semibold"></label>
+                <input asp-for="UrlExterna" class="form-control" placeholder="https://..." />
+                <span asp-validation-for="UrlExterna" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-5">
+                <label asp-for="Instructor" class="form-label small fw-semibold"></label>
+                <input asp-for="Instructor" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Categoria" class="form-label small fw-semibold"></label>
+                <select asp-for="Categoria" asp-items="@(new SelectList(Curso.Categorias))" class="form-select">
+                    <option value="">Elige</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Horas" class="form-label small fw-semibold"></label>
+                <input asp-for="Horas" class="form-control" />
+                <span asp-validation-for="Horas" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">@(esEdicion ? "Guardar cambios" : "Agregar curso")</button>
+        <a asp-action="MisCursos" class="btn btn-link">Cancelar</a>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

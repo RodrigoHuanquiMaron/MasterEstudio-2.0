@@ -62,11 +62,18 @@
                     <div class="col-md-6">
                         <div class="curso-card">
                             <div class="d-flex justify-content-between align-items-start">
-                                <span class="chip-cat">@(i.Curso?.Categoria ?? "General")</span>
+                                @if (i.Curso?.EsPersonal == true)
+                                {
+                                    <span class="chip-personal"><i class="bi bi-person-workspace"></i> Personal</span>
+                                }
+                                else
+                                {
+                                    <span class="chip-cat">@(i.Curso?.Categoria ?? "General")</span>
+                                }
                                 <span class="badge-estado @Calificacion.ClaseEstado(i.Progreso)">@Calificacion.Estado(i.Progreso)</span>
                             </div>
                             <h3 class="curso-titulo">@i.Curso?.Titulo</h3>
-                            <p class="curso-instructor">Instructor: @(i.Curso?.Instructor ?? "Por asignar")</p>
+                            <p class="curso-instructor">@(i.Curso?.EsPersonal == true ? (i.Curso.Plataforma ?? "Curso externo") : "Instructor: " + (i.Curso?.Instructor ?? "Por asignar"))</p>
                             <div class="curso-dato"><span class="etq">Progreso del programa del curso</span><span class="val">@i.Progreso%</span></div>
                             <div class="barra @(i.Progreso >= 100 ? "verde" : "")"><span style="width:@(i.Progreso)%"></span></div>
                             <div class="curso-pie curso-dato">

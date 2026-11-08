@@ -1,0 +1,80 @@
+@model Taller
+@{
+    var accion = ViewData["Accion"] as string ?? "Crear";
+    var esEdicion = accion == "Editar";
+    ViewData["Title"] = esEdicion ? "Editar taller" : "Nuevo taller";
+}
+
+<a asp-action="Gestionar" class="link-sm"><i class="bi bi-arrow-left"></i> Volver a talleres</a>
+
+<div class="tarjeta mt-3" style="max-width:780px">
+    <h1 class="h4 fw-bold mb-4">@ViewData["Title"]</h1>
+    <form asp-action="@accion" asp-route-id="@(esEdicion ? Model.Id.ToString() : null)" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+
+        <div class="mb-3">
+            <label asp-for="Titulo" class="form-label small fw-semibold"></label>
+            <input asp-for="Titulo" class="form-control" />
+            <span asp-validation-for="Titulo" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Descripcion" class="form-label small fw-semibold"></label>
+            <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Descripcion" class="text-danger small"></span>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label asp-for="Facilitador" class="form-label small fw-semibold"></label>
+                <input asp-for="Facilitador" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Categoria" class="form-label small fw-semibold"></label>
+                <select asp-for="Categoria" asp-items="@(new SelectList(Curso.Categorias))" class="form-select">
+                    <option value="">Elige una categoría</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label asp-for="Modalidad" class="form-label small fw-semibold"></label>
+                <select asp-for="Modalidad" asp-items="@(new SelectList(Taller.Modalidades))" class="form-select"></select>
+                <span asp-validation-for="Modalidad" class="text-danger small"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Lugar" class="form-label small fw-semibold"></label>
+                <input asp-for="Lugar" class="form-control" placeholder="Auditorio principal o enlace de Zoom/Meet" />
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-5">
+                <label asp-for="Fecha" class="form-label small fw-semibold"></label>
+                <input asp-for="Fecha" type="datetime-local" value="@Model.Fecha.ToString("yyyy-MM-ddTHH:mm")" class="form-control" />
+                <span asp-validation-for="Fecha" class="text-danger small"></span>
+            </div>
+            <div class="col-6 col-md-3">
+                <label asp-for="DuracionMinutos" class="form-label small fw-semibold"></label>
+                <input asp-for="DuracionMinutos" class="form-control" />
+                <span asp-validation-for="DuracionMinutos" class="text-danger small"></span>
+            </div>
+            <div class="col-6 col-md-4">
+                <label asp-for="Cupos" class="form-label small fw-semibold"></label>
+                <input asp-for="Cupos" class="form-control" />
+                <span asp-validation-for="Cupos" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="ImagenUrl" class="form-label small fw-semibold"></label>
+            <input asp-for="ImagenUrl" class="form-control" placeholder="https://... (opcional)" />
+            <span asp-validation-for="ImagenUrl" class="text-danger small"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">@(esEdicion ? "Guardar cambios" : "Crear taller")</button>
+        <a asp-action="Gestionar" class="btn btn-link">Cancelar</a>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

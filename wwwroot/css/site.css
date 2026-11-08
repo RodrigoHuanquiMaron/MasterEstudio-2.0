@@ -408,3 +408,50 @@ a:hover { color: var(--primario-oscuro); }
 .table { --bs-table-bg: transparent; font-size: .88rem; }
 .table thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muy-suave); font-weight: 600; }
 .img-mini { width: 56px; height: 36px; border-radius: 6px; object-fit: cover; }
+
+/* ---------- Cursos personales (externos) ---------- */
+.curso-personal { border-style: dashed; border-color: var(--primario-borde); }
+.chip-personal {
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--primario);
+    background: var(--primario-suave);
+    border-radius: 6px;
+    padding: .2rem .5rem;
+    white-space: nowrap;
+}
+
+/* ---------- Talleres y buscador (Algolia) ---------- */
+.buscador {
+    display: grid;
+    grid-template-columns: 1fr minmax(160px, 220px) auto;
+    gap: .5rem;
+    position: relative;
+}
+.buscador .form-control { padding-left: 2.4rem; height: 44px; border-radius: 10px; }
+.buscador .form-select { height: 44px; border-radius: 10px; }
+.buscador .btn { height: 44px; border-radius: 10px; }
+.buscador-icono {
+    position: absolute;
+    left: .9rem;
+    top: 22px;
+    transform: translateY(-50%);
+    color: var(--muy-suave);
+    pointer-events: none;
+}
+@media (max-width: 575.98px) {
+    .buscador { grid-template-columns: 1fr; }
+}
+.origen-busqueda {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    background: var(--primario-suave);
+    color: var(--primario);
+    border-radius: 6px;
+    padding: .1rem .45rem;
+    font-weight: 600;
+}
+.taller-fecha { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.taller-fecha .dia { font-size: 2.4rem; font-weight: 700; }
+.taller-fecha .mes { font-size: .85rem; letter-spacing: .12em; margin-top: .25rem; }

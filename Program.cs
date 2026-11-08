@@ -80,6 +80,10 @@ builder.Services.AddScoped<CacheService>();
 builder.Services.Configure<PieHostOptions>(builder.Configuration.GetSection("PieHost"));
 builder.Services.AddHttpClient<PieHostService>(client => client.Timeout = TimeSpan.FromSeconds(10));
 
+// Algolia: buscador de talleres
+builder.Services.Configure<AlgoliaOptions>(builder.Configuration.GetSection("Algolia"));
+builder.Services.AddHttpClient<AlgoliaService>(client => client.Timeout = TimeSpan.FromSeconds(10));
+
 // Machine learning: análisis de sentimiento de donaciones con Hugging Face
 builder.Services.AddHttpClient<SentimientoService>(client => client.Timeout = TimeSpan.FromSeconds(15));
 

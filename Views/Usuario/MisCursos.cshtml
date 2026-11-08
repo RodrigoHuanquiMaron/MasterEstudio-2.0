@@ -15,19 +15,21 @@
         <h1>Mis Cursos</h1>
         <p class="page-sub">Año Académico @DateTime.Now.Year · @Model.Total cursos registrados</p>
     </div>
-    <nav class="filtros" aria-label="Filtrar cursos">
-        @foreach (var f in filtros)
-        {
-            <a asp-action="MisCursos" asp-route-estado="@f.Clave" class="@(Model.Filtro == f.Clave ? "activo" : "")">@f.Texto<span class="num">@f.Cantidad</span></a>
-        }
-    </nav>
+    <a asp-action="NuevoCursoPersonal" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Agregar curso externo</a>
 </div>
+
+<nav class="filtros mb-4" aria-label="Filtrar cursos">
+    @foreach (var f in filtros)
+    {
+        <a asp-action="MisCursos" asp-route-estado="@f.Clave" class="@(Model.Filtro == f.Clave ? "activo" : "")">@f.Texto<span class="num">@f.Cantidad</span></a>
+    }
+</nav>
 
 @if (!Model.Inscripciones.Any())
 {
     <div class="tarjeta text-secondary">
         @(Model.Total == 0
-            ? "Aún no te inscribes en ningún curso."
+            ? "Aún no tienes cursos. Inscríbete en uno de la plataforma o agrega un curso externo que estés llevando por tu cuenta."
             : "No tienes cursos en este estado.")
         <a asp-action="Panel" asp-fragment="explorar">Explorar cursos</a>
     </div>
@@ -39,9 +41,16 @@ else
         {
             var c = i.Curso!;
             <div class="col-md-6 col-xl-4">
-                <div class="curso-card">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="chip-cat">@(c.Categoria ?? "General")</span>
+                <div class="curso-card @(c.EsPersonal ? "curso-personal" : "")">
+                    <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                        @if (c.EsPersonal)
+                        {
+                            <span class="chip-personal"><i class="bi bi-person-workspace"></i> Personal@(string.IsNullOrEmpty(c.Plataforma) ? "" : " · " + c.Plataforma)</span>
+                        }
+                        else
+                        {
+                            <span class="chip-cat">@(c.Categoria ?? "General")</span>
+                        }
                         <span class="badge-estado @Calificacion.ClaseEstado(i.Progreso)">@Calificacion.Estado(i.Progreso)</span>
                     </div>
 
@@ -52,31 +61,67 @@ else
                     else
                     {
                         <div class="curso-img img-placeholder @Calificacion.ClaseCategoria(c.Categoria)" aria-hidden="true">
-                            <i class="bi @Calificacion.IconoCategoria(c.Categoria)"></i>
+                            <i class="bi @(c.EsPersonal ? "bi-person-workspace" : Calificacion.IconoCategoria(c.Categoria))"></i>
                         </div>
                     }
 
                     <h3 class="curso-titulo mt-0">@c.Titulo</h3>
-                    <p class="curso-instructor">Instructor: @(c.Instructor ?? "Por asignar") · @c.Creditos créditos</p>
+                    <p class="curso-instructor">@(c.EsPersonal
+                        ? (c.Instructor ?? "Curso autodidacta") + " · " + c.Horas + " h estimadas"
+                        : "Instructor: " + (c.Instructor ?? "Por asignar") + " · " + c.Creditos + " créditos")</p>
 
                     <div class="curso-dato"><span class="etq">Progreso del programa</span><span class="val">@i.Progreso%</span></div>
                     <div class="barra @(i.Progreso >= 100 ? "verde" : "")"><span style="width:@(i.Progreso)%"></span></div>
 
                     <div class="curso-dato mb-3">
-                        <span class="etq"><i class="bi bi-award me-1"></i>Calificación actual</span>
+                        <span class="etq"><i class="bi bi-award me-1"></i>@(c.EsPersonal ? "Mi nota" : "Calificación actual")</span>
                         <span class="val">@Calificacion.Texto(i.Nota)</span>
                     </div>
 
-                    <div class="curso-pie d-flex gap-2">
-                        @if (i.Progreso < 100)
+                    @if (c.EsPersonal)
+                    {
+                        <form asp-action="ActualizarCursoPersonal" asp-route-id="@c.Id" asp-route-estado="@Model.Filtro" method="post"
+                              class="d-flex gap-2 align-items-end mb-3">
+                            <div>
+                                <label for="prog-@c.Id" class="form-label small text-secondary mb-1">Progreso %</label>
+                                <input id="prog-@c.Id" name="progreso" type="number" min="0" max="100" value="@i.Progreso" class="form-control form-control-sm" />
+                            </div>
+                            <div>
+                                <label for="nota-@c.Id" class="form-label small text-secondary mb-1">Nota (0-100)</label>
+                                <input id="nota-@c.Id" name="nota" type="number" min="0" max="100" step="0.1" value="@(i.Nota?.ToString("0.#"))" class="form-control form-control-sm" />
+                            </div>
+                            <button type="submit" class="btn btn-light-borde btn-sm">Guardar</button>
+                        </form>
+                    }
+
+                    <div class="curso-pie d-flex flex-wrap gap-2">
+                        @if (c.EsPersonal)
                         {
-                            <form asp-action="Avanzar" asp-route-id="@i.Id" asp-route-estado="@Model.Filtro" method="post" class="flex-fill">
-                                <button type="submit" class="btn btn-primary btn-sm w-100">Registrar avance</button>
+                            if (!string.IsNullOrEmpty(c.UrlExterna))
+                            {
+                                <a href="@c.UrlExterna" target="_blank" rel="noopener" class="btn btn-primary btn-sm flex-fill">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Abrir curso
+                                </a>
+                            }
+                            <a asp-action="Estudio" asp-route-cursoId="@c.Id" class="btn btn-light-borde btn-sm flex-fill"><i class="bi bi-stopwatch me-1"></i>Estudiar</a>
+                            <a asp-action="EditarCursoPersonal" asp-route-id="@c.Id" class="btn btn-light-borde btn-sm" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="EliminarCursoPersonal" asp-route-id="@c.Id" method="post"
+                                  onsubmit="return confirm('¿Eliminar este curso personal? También se borrarán sus sesiones de estudio.');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar"><i class="bi bi-trash"></i></button>
                             </form>
                         }
-                        <a asp-action="Estudio" asp-route-cursoId="@c.Id" class="btn btn-light-borde btn-sm flex-fill">
-                            <i class="bi bi-stopwatch me-1"></i>Estudiar
-                        </a>
+                        else
+                        {
+                            if (i.Progreso < 100)
+                            {
+                                <form asp-action="Avanzar" asp-route-id="@i.Id" asp-route-estado="@Model.Filtro" method="post" class="flex-fill">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">Registrar avance</button>
+                                </form>
+                            }
+                            <a asp-action="Estudio" asp-route-cursoId="@c.Id" class="btn btn-light-borde btn-sm flex-fill">
+                                <i class="bi bi-stopwatch me-1"></i>Estudiar
+                            </a>
+                        }
                     </div>
                 </div>
             </div>

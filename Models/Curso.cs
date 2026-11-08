@@ -4,9 +4,13 @@ namespace PlataformaCursos.Models;
 
 public class Curso
 {
-    // Categorías disponibles en el formulario del admin
+    // Categorías disponibles en los formularios
     public static readonly string[] Categorias =
         { "Matemática", "Tecnología", "Lógica", "Contabilidad", "Idiomas", "Otros" };
+
+    // Plataformas sugeridas para cursos externos que crea el alumno
+    public static readonly string[] Plataformas =
+        { "YouTube", "Udemy", "Coursera", "Platzi", "edX", "Khan Academy", "Libro", "Otra" };
 
     public int Id { get; set; }
 
@@ -38,6 +42,23 @@ public class Curso
     [Range(1, 10, ErrorMessage = "Los créditos deben estar entre 1 y 10.")]
     [Display(Name = "Créditos")]
     public int Creditos { get; set; } = 3;
+
+    // ----- Cursos personales (los crea el propio alumno) -----
+
+    // null = curso oficial creado por el administrador
+    public string? PropietarioId { get; set; }
+    public ApplicationUser? Propietario { get; set; }
+
+    [StringLength(500)]
+    [Url(ErrorMessage = "Ingresa un enlace válido (https://...).")]
+    [Display(Name = "Enlace del curso")]
+    public string? UrlExterna { get; set; }
+
+    [StringLength(50)]
+    [Display(Name = "Plataforma")]
+    public string? Plataforma { get; set; }
+
+    public bool EsPersonal => PropietarioId is not null;
 
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 

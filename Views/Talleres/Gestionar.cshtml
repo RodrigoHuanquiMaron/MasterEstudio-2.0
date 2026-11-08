@@ -1,0 +1,59 @@
+@model List<Taller>
+@{
+    ViewData["Title"] = "Gestionar talleres";
+    var algolia = ViewData["AlgoliaConfigurado"] as bool? ?? false;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Gestionar talleres</h1>
+        <p class="page-sub">@Model.Count talleres · cada cambio se guarda en PostgreSQL y se actualiza en el índice de Algolia</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Index" class="btn btn-light-borde"><i class="bi bi-eye"></i> Ver como alumno</a>
+        <form asp-action="Sincronizar" method="post">
+            <button type="submit" class="btn btn-light-borde"><i class="bi bi-arrow-repeat"></i> Sincronizar con Algolia</button>
+        </form>
+        <a asp-action="Crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo taller</a>
+    </div>
+</div>
+
+@if (!algolia)
+{
+    <div class="alert alert-warning">
+        Algolia no está configurado (faltan <code>Algolia__AppId</code> y <code>Algolia__AdminKey</code>). El buscador usará la base de datos mientras tanto.
+    </div>
+}
+
+<div class="tarjeta p-0 table-responsive">
+    <table class="table align-middle mb-0">
+        <thead><tr><th class="ps-3">Taller</th><th>Fecha</th><th>Modalidad</th><th>Inscritos</th><th></th></tr></thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr><td colspan="5" class="ps-3 text-secondary">Aún no hay talleres.</td></tr>
+            }
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td class="ps-3">
+                        <div class="fw-semibold">@t.Titulo</div>
+                        <div class="small text-secondary">@(t.Facilitador ?? "Sin facilitador") · @(t.Categoria ?? "Sin categoría")</div>
+                    </td>
+                    <td>@t.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@t.Modalidad</td>
+                    <td>@t.Inscripciones.Count / @t.Cupos</td>
+                    <td class="text-end pe-3">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a asp-action="Editar" asp-route-id="@t.Id" class="btn btn-light-borde btn-sm">Editar</a>
+                            <form asp-action="Eliminar" asp-route-id="@t.Id" method="post"
+                                  onsubmit="return confirm('¿Eliminar este taller? También se borrarán sus inscripciones.');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
