@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<SesionEstudio> SesionesEstudio => Set<SesionEstudio>();
     public DbSet<Taller> Talleres => Set<Taller>();
     public DbSet<InscripcionTaller> InscripcionesTaller => Set<InscripcionTaller>();
+    public DbSet<ResultadoQuiz> ResultadosQuiz => Set<ResultadoQuiz>();
 
     // Llaves que cifran las cookies (así sobreviven a cada despliegue en Render)
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -91,5 +92,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
             .WithMany()
             .HasForeignKey(i => i.UsuarioId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ----- Resultados del Tutor IA -----
+        builder.Entity<ResultadoQuiz>()
+            .HasOne(r => r.Usuario)
+            .WithMany()
+            .HasForeignKey(r => r.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Si se borra el curso, el resultado se conserva sin curso
+        builder.Entity<ResultadoQuiz>()
+            .HasOne(r => r.Curso)
+            .WithMany()
+            .HasForeignKey(r => r.CursoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<ResultadoQuiz>()
+            .HasIndex(r => new { r.UsuarioId, r.Fecha });
     }
 }

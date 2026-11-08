@@ -412,6 +412,49 @@ namespace PlataformaCursos.Migrations
                     b.ToTable("InscripcionesTaller");
                 });
 
+            modelBuilder.Entity("PlataformaCursos.Models.ResultadoQuiz", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Correctas")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CursoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Dificultad")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Total")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("UsuarioId", "Fecha");
+
+                    b.ToTable("ResultadosQuiz");
+                });
+
             modelBuilder.Entity("PlataformaCursos.Models.SesionEstudio", b =>
                 {
                     b.Property<int>("Id")
@@ -603,6 +646,24 @@ namespace PlataformaCursos.Migrations
                         .IsRequired();
 
                     b.Navigation("Taller");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("PlataformaCursos.Models.ResultadoQuiz", b =>
+                {
+                    b.HasOne("PlataformaCursos.Models.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PlataformaCursos.Models.ApplicationUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
 
                     b.Navigation("Usuario");
                 });

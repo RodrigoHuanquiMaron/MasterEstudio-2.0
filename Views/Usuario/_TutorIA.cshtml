@@ -1,0 +1,147 @@
+@model EstudioViewModel
+
+@* Botón flotante del Tutor IA *@
+<button type="button" id="tutor-abrir" class="tutor-fab" aria-controls="tutor-panel" aria-expanded="false">
+    <i class="bi bi-stars" aria-hidden="true"></i>
+    <span>Tutor IA</span>
+</button>
+
+@* Panel lateral *@
+<aside id="tutor-panel" class="tutor-panel" role="dialog" aria-labelledby="tutor-titulo" aria-hidden="true"
+       data-url-subir="@Url.Action("Subir", "Tutor")"
+       data-url-mas="@Url.Action("Mas", "Tutor")"
+       data-url-profundizar="@Url.Action("Profundizar", "Tutor")"
+       data-url-resultado="@Url.Action("GuardarResultado", "Tutor")">
+    @Html.AntiForgeryToken()
+
+    <header class="tutor-cabecera">
+        <div class="d-flex align-items-center gap-2">
+            <span class="tutor-logo"><i class="bi bi-stars"></i></span>
+            <div>
+                <h2 id="tutor-titulo" class="tutor-h2">Tutor IA</h2>
+                <p class="tutor-sub">Sube tu material y ponte a prueba</p>
+            </div>
+        </div>
+        <button type="button" id="tutor-cerrar" class="tutor-x" aria-label="Cerrar tutor"><i class="bi bi-x-lg"></i></button>
+    </header>
+
+    <nav class="tutor-tabs" role="tablist">
+        <button type="button" role="tab" class="activo" data-tab="quiz" aria-selected="true"><i class="bi bi-ui-checks"></i> Cuestionario</button>
+        <button type="button" role="tab" data-tab="chat" aria-selected="false"><i class="bi bi-chat-dots"></i> Profundizar</button>
+    </nav>
+
+    <div class="tutor-cuerpo">
+        @if (!Model.TutorConfigurado)
+        {
+            <div class="alert alert-warning small mb-3">
+                El tutor no está configurado todavía: falta la clave <code>Groq__ApiKey</code>.
+            </div>
+        }
+
+        @* ===================== PESTAÑA CUESTIONARIO ===================== *@
+        <section id="tab-quiz" role="tabpanel">
+
+            @* 1. Subir documento *@
+            <div id="paso-subir">
+                <label id="zona-archivo" class="tutor-drop" for="tutor-archivo">
+                    <input type="file" id="tutor-archivo" accept=".pdf,.pptx,.docx,.txt,.md" class="visually-hidden" />
+                    <span class="tutor-drop-icono"><i class="bi bi-cloud-arrow-up"></i></span>
+                    <span class="fw-semibold" id="nombre-archivo">Arrastra tu documento o haz clic aquí</span>
+                    <span class="small text-secondary">PDF, PowerPoint (.pptx), Word (.docx) o .txt · hasta 15 MB</span>
+                </label>
+
+                <div class="tutor-opciones">
+                    <div>
+                        <span class="tutor-etq">Dificultad</span>
+                        <div class="tutor-segmento" role="radiogroup" aria-label="Dificultad">
+                            <input type="radio" name="tutor-dif" id="dif-facil" value="Fácil" /><label for="dif-facil">Fácil</label>
+                            <input type="radio" name="tutor-dif" id="dif-media" value="Media" checked /><label for="dif-media">Media</label>
+                            <input type="radio" name="tutor-dif" id="dif-dificil" value="Difícil" /><label for="dif-dificil">Difícil</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="tutor-etq" for="tutor-cantidad">Preguntas</label>
+                        <select id="tutor-cantidad" class="form-select form-select-sm">
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="8">8</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" id="tutor-generar" class="btn btn-primary w-100 py-2" disabled>
+                    <i class="bi bi-magic"></i> Generar cuestionario
+                </button>
+
+                <div class="tutor-historial">
+                    <h3 class="tutor-h3">Tus últimos resultados</h3>
+                    <ul id="lista-resultados" class="tutor-lista">
+                        @if (!Model.ResultadosQuiz.Any())
+                        {
+                            <li class="vacio">Aún no respondes ningún cuestionario.</li>
+                        }
+                        @foreach (var r in Model.ResultadosQuiz)
+                        {
+                            var pct = r.Total == 0 ? 0 : r.Correctas * 100 / r.Total;
+                            <li>
+                                <span class="tutor-pct @(pct >= 70 ? "bien" : pct >= 50 ? "regular" : "mal")">@pct%</span>
+                                <span class="flex-grow-1 text-truncate">
+                                    <span class="d-block text-truncate fw-semibold">@r.Documento</span>
+                                    <span class="small text-secondary">@r.Correctas/@r.Total · @r.Dificultad · @r.Fecha.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            @* 2. Cargando *@
+            <div id="paso-cargando" class="tutor-cargando" hidden>
+                <div class="tutor-orbita"><i class="bi bi-stars"></i></div>
+                <p class="fw-semibold mb-1" id="texto-cargando">Leyendo tu documento…</p>
+                <p class="small text-secondary">Esto toma unos segundos.</p>
+                <div class="tutor-esqueleto"></div>
+                <div class="tutor-esqueleto corto"></div>
+            </div>
+
+            @* 3. Preguntas *@
+            <div id="paso-quiz" hidden>
+                <div class="tutor-doc">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span id="doc-nombre" class="text-truncate"></span>
+                    <button type="button" id="tutor-nuevo" class="btn btn-link btn-sm ms-auto p-0">Cambiar</button>
+                </div>
+
+                <div id="resumen-total" class="tutor-total" hidden></div>
+                <div id="lista-preguntas"></div>
+
+                <div class="tutor-acciones">
+                    <div class="tutor-progreso"><span id="progreso-texto">0 de 0 respondidas</span><div class="barra"><span id="progreso-barra" style="width:0"></span></div></div>
+                    <button type="button" id="tutor-calificar" class="btn btn-primary w-100" disabled><i class="bi bi-check2-circle"></i> Calificar respuestas</button>
+                    <button type="button" id="tutor-mas" class="btn btn-light-borde w-100" hidden><i class="bi bi-plus-circle"></i> Generar más preguntas</button>
+                </div>
+            </div>
+        </section>
+
+        @* ===================== PESTAÑA PROFUNDIZAR ===================== *@
+        <section id="tab-chat" role="tabpanel" hidden>
+            <div id="chat-mensajes" class="tutor-chat" aria-live="polite">
+                <div class="burbuja bot">
+                    <p>¡Hola! Soy tu tutor. Pregúntame cualquier tema que no te haya quedado claro y te lo explico con ejemplos.</p>
+                    <p class="small text-secondary mb-0">Si subiste un documento, usaré ese material como referencia.</p>
+                </div>
+            </div>
+            <div id="chat-sugerencias" class="tutor-chips">
+                <button type="button" class="chip-sug">Explícame el tema principal con un ejemplo</button>
+                <button type="button" class="chip-sug">Hazme un resumen en 5 puntos</button>
+                <button type="button" class="chip-sug">¿Qué es lo más importante para el examen?</button>
+            </div>
+            <form id="chat-form" class="tutor-entrada">
+                <label for="chat-texto" class="visually-hidden">Escribe tu duda</label>
+                <textarea id="chat-texto" rows="1" maxlength="1500" placeholder="Escribe tu duda…" class="form-control"></textarea>
+                <button type="submit" class="btn btn-primary" aria-label="Enviar"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </section>
+    </div>
+</aside>

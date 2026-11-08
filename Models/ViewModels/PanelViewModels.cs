@@ -72,6 +72,8 @@ public class EstudioViewModel
     public int? CursoId { get; set; }
     public int SegundosHoy { get; set; }
     public List<SesionEstudio> Recientes { get; set; } = new();
+    public List<ResultadoQuiz> ResultadosQuiz { get; set; } = new();
+    public bool TutorConfigurado { get; set; }
 }
 
 public class AporteViewModel

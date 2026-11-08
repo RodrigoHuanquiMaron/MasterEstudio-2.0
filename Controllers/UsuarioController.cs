@@ -16,14 +16,16 @@ public class UsuarioController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly CacheService _cache;
     private readonly SentimientoService _sentimiento;
+    private readonly GroqService _groq;
 
     public UsuarioController(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
-        CacheService cache, SentimientoService sentimiento)
+        CacheService cache, SentimientoService sentimiento, GroqService groq)
     {
         _db = db;
         _userManager = userManager;
         _cache = cache;
         _sentimiento = sentimiento;
+        _groq = groq;
     }
 
     private string UsuarioId => _userManager.GetUserId(User)!;
@@ -167,6 +169,18 @@ public class UsuarioController : Controller
             Icono = "bi-award",
             Texto = $"Obtuviste {Calificacion.Texto(i.Nota)} en {i.Curso?.Titulo}",
             Fecha = i.FechaCalificacion!.Value
+        }));
+        var cuestionarios = await _db.ResultadosQuiz
+            .AsNoTracking()
+            .Where(r => r.UsuarioId == id)
+            .OrderByDescending(r => r.Fecha)
+            .Take(5)
+            .ToListAsync();
+        actividades.AddRange(cuestionarios.Select(r => new ActividadViewModel
+        {
+            Icono = "bi-stars",
+            Texto = $"Respondiste {r.Correctas} de {r.Total} preguntas sobre \"{r.Documento}\"",
+            Fecha = r.Fecha
         }));
         actividades.AddRange(donaciones.Select(d => new ActividadViewModel
         {
@@ -463,12 +477,22 @@ public class UsuarioController : Controller
             .Take(5)
             .ToListAsync();
 
+        var resultados = await _db.ResultadosQuiz
+            .AsNoTracking()
+            .Include(r => r.Curso)
+            .Where(r => r.UsuarioId == id)
+            .OrderByDescending(r => r.Fecha)
+            .Take(5)
+            .ToListAsync();
+
         var model = new EstudioViewModel
         {
             Cursos = inscripciones.Where(i => i.Curso is not null).Select(i => i.Curso!).ToList(),
             CursoId = cursoId,
             SegundosHoy = hoy.Sum(s => s.Segundos),
-            Recientes = recientes
+            Recientes = recientes,
+            ResultadosQuiz = resultados,
+            TutorConfigurado = _groq.Configurado
         };
         return View(model);
     }

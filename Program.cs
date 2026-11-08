@@ -84,6 +84,9 @@ builder.Services.AddHttpClient<PieHostService>(client => client.Timeout = TimeSp
 builder.Services.Configure<AlgoliaOptions>(builder.Configuration.GetSection("Algolia"));
 builder.Services.AddHttpClient<AlgoliaService>(client => client.Timeout = TimeSpan.FromSeconds(10));
 
+// Tutor IA: preguntas y explicaciones con Groq
+builder.Services.AddHttpClient<GroqService>(client => client.Timeout = TimeSpan.FromSeconds(90));
+
 // Machine learning: análisis de sentimiento de donaciones con Hugging Face
 builder.Services.AddHttpClient<SentimientoService>(client => client.Timeout = TimeSpan.FromSeconds(15));
 
