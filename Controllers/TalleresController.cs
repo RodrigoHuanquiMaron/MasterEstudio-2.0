@@ -15,12 +15,17 @@ public class TalleresController : Controller
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AlgoliaService _algolia;
+    private readonly CursosGratuitosService _gratuitos;
+    private readonly CacheService _cache;
 
-    public TalleresController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, AlgoliaService algolia)
+    public TalleresController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, AlgoliaService algolia,
+        CursosGratuitosService gratuitos, CacheService cache)
     {
         _db = db;
         _userManager = userManager;
         _algolia = algolia;
+        _gratuitos = gratuitos;
+        _cache = cache;
     }
 
     private string UsuarioId => _userManager.GetUserId(User)!;
@@ -155,6 +160,77 @@ public class TalleresController : Controller
             TempData["Mensaje"] = $"Cancelaste tu inscripción en \"{inscripcion.Taller?.Titulo}\".";
         }
         return RedirectToAction(nameof(Index), new { q, modalidad });
+    }
+
+    // ---------- Cursos gratuitos de otras plataformas ----------
+
+    public async Task<IActionResult> CursosGratuitos(string? q, string? fuente)
+    {
+        if (fuente is not (Fuentes.Microsoft or Fuentes.YouTube)) fuente = null;
+        var resultado = await _gratuitos.BuscarAsync(q, fuente);
+
+        // Enlaces que el alumno ya agregó a "Mis cursos"
+        var usuarioId = UsuarioId;
+        var misEnlaces = await _db.Cursos
+            .Where(c => c.PropietarioId == usuarioId && c.UrlExterna != null)
+            .Select(c => c.UrlExterna!)
+            .ToListAsync();
+
+        var model = new CursosGratuitosViewModel
+        {
+            Busqueda = q?.Trim(),
+            Fuente = fuente,
+            Cursos = resultado.Cursos,
+            Avisos = resultado.Avisos,
+            YaAgregados = misEnlaces.ToHashSet(StringComparer.OrdinalIgnoreCase)
+        };
+        return View(model);
+    }
+
+    // Convierte un curso gratuito en un curso externo del alumno (ver "Mis cursos")
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = SeedData.RolUsuario)]
+    public async Task<IActionResult> AgregarAMisCursos(string titulo, string url, string? descripcion, string? autor,
+        string? imagen, int horas, string? q, string? fuente)
+    {
+        var plataforma = CursosGratuitosService.FuenteDeUrl(url);
+        if (plataforma is null || string.IsNullOrWhiteSpace(titulo))
+        {
+            TempData["Error"] = "No se pudo agregar ese curso.";
+            return RedirectToAction(nameof(CursosGratuitos), new { q, fuente });
+        }
+
+        var usuarioId = UsuarioId;
+        if (await _db.Cursos.AnyAsync(c => c.PropietarioId == usuarioId && c.UrlExterna == url))
+        {
+            TempData["Mensaje"] = "Ese curso ya está en tus cursos.";
+            return RedirectToAction(nameof(CursosGratuitos), new { q, fuente });
+        }
+
+        static string? Recortar(string? texto, int largo) =>
+            string.IsNullOrWhiteSpace(texto) ? null : texto.Length > largo ? texto[..largo] : texto;
+
+        var curso = new Curso
+        {
+            Titulo = Recortar(titulo.Trim(), 100)!,
+            Descripcion = Recortar(descripcion, 500),
+            Plataforma = plataforma,
+            UrlExterna = url,
+            Instructor = Recortar(autor, 100),
+            ImagenUrl = Uri.TryCreate(imagen, UriKind.Absolute, out var img) && img.Scheme == Uri.UriSchemeHttps ? Recortar(imagen, 500) : null,
+            Categoria = plataforma == Fuentes.Microsoft ? "Tecnología" : null,
+            Horas = Math.Clamp(horas, 1, 500),
+            Creditos = 0,
+            PropietarioId = usuarioId
+        };
+        curso.Inscripciones.Add(new Inscripcion { UsuarioId = usuarioId });
+        _db.Cursos.Add(curso);
+        await _db.SaveChangesAsync();
+        await _cache.InvalidarUsuarioAsync(usuarioId);
+
+        TempData["Mensaje"] = $"Agregaste \"{curso.Titulo}\" a tus cursos. Lo encontrarás en Mis Cursos y en el cronómetro.";
+        return RedirectToAction(nameof(CursosGratuitos), new { q, fuente });
     }
 
     // ---------- Administración ----------

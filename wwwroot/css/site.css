@@ -671,3 +671,53 @@ body.tutor-activo .tutor-fab { opacity: 0; pointer-events: none; }
     .tutor-panel { transition: none; }
 }
 
+/* =========================================================
+   Pestañas de Talleres y cursos gratuitos
+   ========================================================= */
+.pestanas { display: flex; gap: .25rem; border-bottom: 1px solid var(--borde); }
+.pestanas a {
+    padding: .6rem 1rem;
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--suave);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+.pestanas a:hover { color: var(--tinta); }
+.pestanas a.activo { color: var(--primario); border-bottom-color: var(--primario); }
+
+#resultados { transition: opacity .2s; }
+#resultados.buscando { opacity: .55; }
+
+.gratis-imagen { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #EEF0F4; }
+.gratis-imagen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gratis-imagen .img-placeholder { width: 100%; height: 100%; }
+.gratis-fuente {
+    position: absolute;
+    left: .6rem;
+    top: .6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .55rem;
+    border-radius: 6px;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+}
+.gratis-fuente.ms { background: #0F6CBD; }
+.gratis-fuente.yt { background: #E11D2B; }
+.gratis-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+.gratis-datos { display: flex; flex-wrap: wrap; gap: .35rem .9rem; font-size: .78rem; color: var(--suave); margin-bottom: .9rem; }
+.gratis-datos .bi { margin-right: .15rem; }
+.gratis-precio { margin-left: auto; font-weight: 700; color: var(--verde); }
+.gratis-agregado { background: var(--verde-suave); color: var(--verde); font-weight: 600; cursor: default; }
+

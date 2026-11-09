@@ -15,6 +15,8 @@
     }
 </div>
 
+<partial name="_Pestanas" />
+
 <form id="form-busqueda" asp-action="Index" method="get" class="buscador mb-2" role="search">
     <i class="bi bi-search buscador-icono" aria-hidden="true"></i>
     <input id="q" name="q" value="@Model.Busqueda" type="search" class="form-control" autocomplete="off"
@@ -111,40 +113,5 @@
 }
 
 @section Scripts {
-    <script>
-        // Búsqueda mientras escribes: pide la misma página al servidor (que consulta Algolia)
-        // y reemplaza solo los resultados. Las claves de Algolia nunca llegan al navegador.
-        (function () {
-            const form = document.getElementById('form-busqueda');
-            const input = document.getElementById('q');
-            const resultados = document.getElementById('resultados');
-            if (!form || !input || !resultados) return;
-
-            let espera = null;
-            let ultima = input.value;
-
-            async function buscar() {
-                const params = new URLSearchParams(new FormData(form));
-                const url = form.action + '?' + params.toString();
-                try {
-                    const respuesta = await fetch(url, { cache: 'no-store' });
-                    if (!respuesta.ok) return;
-                    const html = await respuesta.text();
-                    const nuevo = new DOMParser().parseFromString(html, 'text/html').getElementById('resultados');
-                    if (nuevo) resultados.innerHTML = nuevo.innerHTML;
-                    history.replaceState(null, '', url);
-                } catch (e) {
-                    console.warn('No se pudo buscar', e);
-                }
-            }
-
-            input.addEventListener('input', () => {
-                if (input.value === ultima) return;
-                ultima = input.value;
-                clearTimeout(espera);
-                espera = setTimeout(buscar, 300);
-            });
-            form.modalidad.addEventListener('change', buscar);
-        })();
-    </script>
+    <script src="~/js/busqueda-en-vivo.js" asp-append-version="true"></script>
 }

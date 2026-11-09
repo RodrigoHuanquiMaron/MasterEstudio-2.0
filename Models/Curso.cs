@@ -10,7 +10,7 @@ public class Curso
 
     // Plataformas sugeridas para cursos externos que crea el alumno
     public static readonly string[] Plataformas =
-        { "YouTube", "Udemy", "Coursera", "Platzi", "edX", "Khan Academy", "Libro", "Otra" };
+        { "YouTube", "Microsoft Learn", "Udemy", "Coursera", "Platzi", "edX", "Khan Academy", "Libro", "Otra" };
 
     public int Id { get; set; }
 

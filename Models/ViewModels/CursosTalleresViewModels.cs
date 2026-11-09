@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using PlataformaCursos.Infrastructure;
+
 namespace PlataformaCursos.Models.ViewModels;
 
 // Formulario con el que el alumno crea o edita su propio curso externo
@@ -55,4 +57,13 @@ public class TalleresViewModel
     public bool AlgoliaConfigurado { get; set; }
     public List<TallerTarjetaViewModel> Talleres { get; set; } = new();
     public List<TallerTarjetaViewModel> MisTalleres { get; set; } = new();
+}
+
+public class CursosGratuitosViewModel
+{
+    public string? Busqueda { get; set; }
+    public string? Fuente { get; set; }
+    public List<CursoGratuito> Cursos { get; set; } = new();
+    public List<string> Avisos { get; set; } = new();
+    public HashSet<string> YaAgregados { get; set; } = new();
 }

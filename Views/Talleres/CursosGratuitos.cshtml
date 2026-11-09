@@ -1,0 +1,144 @@
+@model CursosGratuitosViewModel
+@{
+    ViewData["Title"] = "Cursos gratuitos";
+    var esAlumno = User.IsInRole("Usuario");
+}
+
+<div class="page-head">
+    <div>
+        <h1>Talleres y cursos</h1>
+        <p class="page-sub">Cursos gratuitos de Microsoft Learn y YouTube. Agrégalos a Mis Cursos para seguir tu avance y estudiarlos con el cronómetro.</p>
+    </div>
+</div>
+
+<partial name="_Pestanas" />
+
+<form id="form-busqueda" asp-action="CursosGratuitos" method="get" class="buscador mb-2" role="search"
+      data-minimo="3" data-espera="600">
+    <i class="bi bi-search buscador-icono" aria-hidden="true"></i>
+    <input id="q" name="q" value="@Model.Busqueda" type="search" class="form-control" autocomplete="off"
+           placeholder="¿Qué quieres aprender? python, excel, azure, cálculo…" aria-label="Buscar cursos gratuitos" />
+    <select name="fuente" class="form-select" aria-label="Plataforma">
+        <option value="">Todas las plataformas</option>
+        @foreach (var f in new[] { Fuentes.Microsoft, Fuentes.YouTube })
+        {
+            if (f == Model.Fuente)
+            {
+                <option value="@f" selected>@f</option>
+            }
+            else
+            {
+                <option value="@f">@f</option>
+            }
+        }
+    </select>
+    <button type="submit" class="btn btn-primary">Buscar</button>
+</form>
+
+<div id="resultados">
+    <p class="small text-secondary mb-3">
+        @if (string.IsNullOrEmpty(Model.Busqueda))
+        {
+            <text>Cursos destacados · escribe un tema para buscar</text>
+        }
+        else
+        {
+            <text>@Model.Cursos.Count cursos para "@Model.Busqueda"</text>
+            <a asp-action="CursosGratuitos" class="ms-2">Limpiar</a>
+        }
+    </p>
+
+    @foreach (var aviso in Model.Avisos)
+    {
+        <div class="alert alert-warning small py-2">@aviso</div>
+    }
+
+    @if (!Model.Cursos.Any())
+    {
+        <div class="tarjeta text-secondary mb-4">No encontramos cursos con esa búsqueda. Prueba con otra palabra, por ejemplo "python" o "excel".</div>
+    }
+    else
+    {
+        <div class="row g-4 mb-4">
+            @foreach (var c in Model.Cursos)
+            {
+                var esMicrosoft = c.Fuente == Fuentes.Microsoft;
+                var agregado = Model.YaAgregados.Contains(c.Url);
+                <div class="col-md-6 col-xl-4">
+                    <article class="curso-card gratis-card">
+                        <div class="gratis-imagen">
+                            @if (!string.IsNullOrEmpty(c.Imagen))
+                            {
+                                <img src="@c.Imagen" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                            }
+                            else
+                            {
+                                <div class="img-placeholder cat-tecnologia"><i class="bi @(esMicrosoft ? "bi-microsoft" : "bi-youtube")"></i></div>
+                            }
+                            <span class="gratis-fuente @(esMicrosoft ? "ms" : "yt")">
+                                <i class="bi @(esMicrosoft ? "bi-microsoft" : "bi-youtube")"></i> @c.Fuente
+                            </span>
+                        </div>
+
+                        <h3 class="curso-titulo mt-3">@c.Titulo</h3>
+                        <p class="curso-instructor mb-2">@c.Autor</p>
+                        @if (!string.IsNullOrEmpty(c.Descripcion))
+                        {
+                            <p class="small text-secondary gratis-desc">@c.Descripcion</p>
+                        }
+
+                        <div class="gratis-datos">
+                            @if (c.Minutos > 0)
+                            {
+                                <span><i class="bi bi-clock"></i> @(c.MinutosEstimados ? "≈ " : "")@Calificacion.Duracion(c.Minutos * 60)</span>
+                            }
+                            @if (c.Videos.HasValue)
+                            {
+                                <span><i class="bi bi-collection-play"></i> @c.Videos videos</span>
+                            }
+                            @if (!string.IsNullOrEmpty(c.Nivel))
+                            {
+                                <span><i class="bi bi-bar-chart"></i> @c.Nivel</span>
+                            }
+                            <span class="gratis-precio">Gratis</span>
+                        </div>
+
+                        <div class="curso-pie d-flex gap-2">
+                            <a href="@c.Url" target="_blank" rel="noopener" class="btn btn-light-borde btn-sm flex-fill">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Ver curso
+                            </a>
+                            @if (esAlumno)
+                            {
+                                if (agregado)
+                                {
+                                    <span class="btn btn-sm flex-fill gratis-agregado"><i class="bi bi-check2"></i> En tus cursos</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="AgregarAMisCursos" method="post" class="flex-fill">
+                                        <input type="hidden" name="titulo" value="@c.Titulo" />
+                                        <input type="hidden" name="url" value="@c.Url" />
+                                        <input type="hidden" name="descripcion" value="@c.Descripcion" />
+                                        <input type="hidden" name="autor" value="@c.Autor" />
+                                        <input type="hidden" name="imagen" value="@c.Imagen" />
+                                        <input type="hidden" name="horas" value="@c.HorasAproximadas" />
+                                        <input type="hidden" name="q" value="@Model.Busqueda" />
+                                        <input type="hidden" name="fuente" value="@Model.Fuente" />
+                                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> Agregar a Mis cursos</button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+    <p class="small text-secondary">
+        Los cursos pertenecen a sus plataformas. MasterEstudio solo te ayuda a encontrarlos y a organizar tu avance.
+    </p>
+</div>
+
+@section Scripts {
+    <script src="~/js/busqueda-en-vivo.js" asp-append-version="true"></script>
+}

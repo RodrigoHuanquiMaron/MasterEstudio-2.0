@@ -1,0 +1,11 @@
+@{
+    var accion = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<nav class="pestanas mb-4" aria-label="Secciones">
+    <a asp-controller="Talleres" asp-action="Index" class="@(accion == "Index" ? "activo" : "")">
+        <i class="bi bi-calendar-event"></i> Talleres
+    </a>
+    <a asp-controller="Talleres" asp-action="CursosGratuitos" class="@(accion == "CursosGratuitos" ? "activo" : "")">
+        <i class="bi bi-gift"></i> Cursos gratuitos
+    </a>
+</nav>
