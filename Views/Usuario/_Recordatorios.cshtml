@@ -1,0 +1,228 @@
+@model PanelUsuarioViewModel
+@{
+    var rec = Model.Recordatorios;
+}
+@functions {
+    static string Relativo(DateTime fechaUtc)
+    {
+        var diferencia = fechaUtc - DateTime.UtcNow;
+        var dias = (fechaUtc.ToLocalTime().Date - DateTime.Now.Date).Days;
+        if (diferencia.TotalMinutes < 0) return diferencia.TotalHours > -1 ? "hace un momento" : "ya pasó";
+        if (diferencia.TotalMinutes < 60) return $"en {Math.Max(1, (int)diferencia.TotalMinutes)} min";
+        if (dias == 0) return $"hoy, en {(int)diferencia.TotalHours} h";
+        if (dias == 1) return "mañana";
+        if (dias < 7) return $"en {dias} días";
+        return $"en {dias / 7} sem";
+    }
+
+    static string Urgencia(Recordatorio r)
+    {
+        if (r.Completado) return "hecho";
+        var horas = (r.Fecha - DateTime.UtcNow).TotalHours;
+        return horas < 0 ? "vencido" : horas <= 24 ? "urgente" : horas <= 72 ? "pronto" : "";
+    }
+
+    static readonly string[] DiasSemana = { "dom", "lun", "mar", "mié", "jue", "vie", "sáb" };
+    static readonly string[] Meses = { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic" };
+
+    // Ejemplo: "lun 16 nov, 08:00"
+    static string FechaCorta(DateTime fechaUtc)
+    {
+        var f = fechaUtc.ToLocalTime();
+        return $"{DiasSemana[(int)f.DayOfWeek]} {f.Day} {Meses[f.Month - 1]}, {f:HH:mm}";
+    }
+
+    static string Icono(string tipo) => tipo switch
+    {
+        "Examen" => "bi-pencil-square",
+        "Entrega" => "bi-upload",
+        "Exposición" => "bi-easel",
+        "Estudio" => "bi-book",
+        _ => "bi-pin-angle"
+    };
+}
+
+<div class="tarjeta mb-4" id="recordatorios">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+            <h2 class="tarjeta-titulo">Mis recordatorios</h2>
+            <p class="tarjeta-sub">Exámenes, entregas y todo lo que no quieres olvidar</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-recordatorio">
+            <i class="bi bi-plus-lg"></i> Nuevo
+        </button>
+    </div>
+
+    @if (rec.Vencidos > 0)
+    {
+        <p class="small text-danger mb-2"><i class="bi bi-exclamation-circle"></i> Tienes @rec.Vencidos recordatorio(s) vencido(s) sin marcar como hecho.</p>
+    }
+
+    @if (!rec.Proximos.Any())
+    {
+        <div class="rec-vacio">
+            <i class="bi bi-calendar2-check"></i>
+            <p class="mb-0 small">No tienes recordatorios próximos. Crea uno para tu próximo examen o entrega.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="rec-lista">
+            @foreach (var r in rec.Proximos)
+            {
+                var enlace = r.GoogleEventUrl ?? GoogleCalendarService.EnlacePlantilla(r, r.Curso?.Titulo);
+                <li class="rec-item @Urgencia(r)">
+                    <form asp-controller="Calendario" asp-action="Completar" asp-route-id="@r.Id" method="post">
+                        <button type="submit" class="rec-check" aria-label="@(r.Completado ? "Marcar como pendiente" : "Marcar como hecho")">
+                            <i class="bi @(r.Completado ? "bi-check-circle-fill" : "bi-circle")"></i>
+                        </button>
+                    </form>
+                    <span class="rec-icono tipo-@r.Tipo.ToLowerInvariant()"><i class="bi @Icono(r.Tipo)"></i></span>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="rec-titulo text-truncate">@r.Titulo</div>
+                        <div class="rec-meta">
+                            <span>@FechaCorta(r.Fecha)</span>
+                            <span class="rec-cuando">@Relativo(r.Fecha)</span>
+                            @if (r.Curso is not null)
+                            {
+                                <span class="text-truncate">· @r.Curso.Titulo</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="rec-acciones">
+                        <a href="@enlace" target="_blank" rel="noopener"
+                           title="@(r.GoogleEventId is null ? "Agregar a Google Calendar" : "Ver en Google Calendar")"
+                           class="@(r.GoogleEventId is null ? "" : "sincronizado")">
+                            <i class="bi @(r.GoogleEventId is null ? "bi-calendar-plus" : "bi-google")"></i>
+                        </a>
+                        <form asp-controller="Calendario" asp-action="Eliminar" asp-route-id="@r.Id" method="post"
+                              onsubmit="return confirm('¿Eliminar este recordatorio?@(r.GoogleEventId is null ? "" : " También se quitará de tu Google Calendar.")');">
+                            <button type="submit" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (rec.GoogleDisponible)
+    {
+        <div class="rec-google">
+            @if (rec.GoogleConectado)
+            {
+                <span class="small"><i class="bi bi-check-circle-fill text-success"></i> Google Calendar conectado@(rec.GoogleCorreo is null ? "" : " · " + rec.GoogleCorreo)</span>
+                <form asp-controller="Calendario" asp-action="Desconectar" method="post">
+                    <button type="submit" class="btn btn-link btn-sm p-0 text-secondary">Desconectar</button>
+                </form>
+            }
+            else
+            {
+                <span class="small text-secondary">Recibe avisos en tu celular con Google Calendar</span>
+                <form asp-controller="Calendario" asp-action="Conectar" method="post">
+                    <button type="submit" class="btn btn-light-borde btn-sm"><i class="bi bi-google me-1"></i>Conectar</button>
+                </form>
+            }
+        </div>
+    }
+</div>
+
+@* ---------- Ventana para crear un recordatorio ---------- *@
+<div class="modal fade" id="modal-recordatorio" tabindex="-1" aria-labelledby="titulo-modal-rec" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content rec-modal" asp-controller="Calendario" asp-action="Crear" method="post">
+            <div class="modal-header">
+                <h2 class="modal-title h5 fw-bold" id="titulo-modal-rec"><i class="bi bi-bell me-1"></i> Nuevo recordatorio</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="rec-titulo" class="form-label small fw-semibold">¿Qué tienes que recordar?</label>
+                    <input id="rec-titulo" name="Titulo" maxlength="120" required class="form-control" placeholder="Examen parcial de Cálculo I" />
+                </div>
+
+                <div class="mb-3">
+                    <span class="form-label small fw-semibold d-block">Tipo</span>
+                    <div class="rec-tipos" role="radiogroup" aria-label="Tipo de recordatorio">
+                        @foreach (var tipo in Recordatorio.Tipos)
+                        {
+                            var idTipo = "tipo-" + tipo.ToLowerInvariant();
+                            if (tipo == "Examen")
+                            {
+                                <input type="radio" name="Tipo" id="@idTipo" value="@tipo" checked />
+                            }
+                            else
+                            {
+                                <input type="radio" name="Tipo" id="@idTipo" value="@tipo" />
+                            }
+                            <label for="@idTipo"><i class="bi @Icono(tipo)"></i> @tipo</label>
+                        }
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-7">
+                        <label for="rec-fecha" class="form-label small fw-semibold">Fecha y hora</label>
+                        <input id="rec-fecha" name="Fecha" type="datetime-local" required class="form-control"
+                               value="@DateTime.Now.Date.AddDays(1).AddHours(8).ToString("yyyy-MM-ddTHH:mm")"
+                               min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                    </div>
+                    <div class="col-sm-5">
+                        <label for="rec-duracion" class="form-label small fw-semibold">Duración</label>
+                        <select id="rec-duracion" name="DuracionMinutos" class="form-select">
+                            <option value="30">30 min</option>
+                            <option value="60" selected>1 hora</option>
+                            <option value="90">1 h 30 min</option>
+                            <option value="120">2 horas</option>
+                            <option value="180">3 horas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label for="rec-curso" class="form-label small fw-semibold">Curso (opcional)</label>
+                        <select id="rec-curso" name="CursoId" class="form-select">
+                            <option value="">Ninguno</option>
+                            @foreach (var i in Model.Inscripciones.Where(i => i.Curso is not null))
+                            {
+                                <option value="@i.CursoId">@i.Curso!.Titulo</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="rec-aviso" class="form-label small fw-semibold">Avisarme</label>
+                        <select id="rec-aviso" name="AvisoMinutosAntes" class="form-select">
+                            <option value="0">Sin aviso</option>
+                            <option value="10">10 min antes</option>
+                            <option value="60">1 hora antes</option>
+                            <option value="1440" selected>1 día antes</option>
+                            <option value="2880">2 días antes</option>
+                            <option value="10080">1 semana antes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="rec-notas" class="form-label small fw-semibold">Notas (opcional)</label>
+                    <textarea id="rec-notas" name="Notas" maxlength="500" rows="2" class="form-control" placeholder="Temas: derivadas e integrales. Llevar calculadora."></textarea>
+                </div>
+
+                @if (rec.GoogleConectado)
+                {
+                    <div class="form-check">
+                        <input id="rec-google" name="EnviarAGoogle" type="checkbox" value="true" class="form-check-input" checked />
+                        <label for="rec-google" class="form-check-label small">Agregar también a mi Google Calendar</label>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="EnviarAGoogle" value="false" />
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-bell"></i> Guardar recordatorio</button>
+            </div>
+        </form>
+    </div>
+</div>

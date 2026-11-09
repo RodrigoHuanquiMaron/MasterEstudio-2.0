@@ -721,3 +721,79 @@ body.tutor-activo .tutor-fab { opacity: 0; pointer-events: none; }
 .gratis-precio { margin-left: auto; font-weight: 700; color: var(--verde); }
 .gratis-agregado { background: var(--verde-suave); color: var(--verde); font-weight: 600; cursor: default; }
 
+/* =========================================================
+   Recordatorios (Panel) y Google Calendar
+   ========================================================= */
+.rec-lista { list-style: none; margin: 0; padding: 0; }
+.rec-item {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .6rem .5rem;
+    border-radius: 10px;
+    border-left: 3px solid transparent;
+    transition: background .15s;
+}
+.rec-item + .rec-item { margin-top: .2rem; }
+.rec-item:hover { background: var(--fondo); }
+.rec-item.urgente { border-left-color: var(--rojo); background: #FEF2F2; }
+.rec-item.pronto { border-left-color: var(--ambar); }
+.rec-item.vencido { border-left-color: var(--muy-suave); }
+.rec-item.hecho { opacity: .55; }
+.rec-item.hecho .rec-titulo { text-decoration: line-through; }
+.min-w-0 { min-width: 0; }
+
+.rec-check { border: 0; background: none; padding: 0; font-size: 1.15rem; color: var(--muy-suave); line-height: 1; }
+.rec-check:hover { color: var(--verde); }
+.rec-item.hecho .rec-check { color: var(--verde); }
+
+.rec-icono { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; font-size: .95rem; }
+.tipo-examen { background: var(--rojo-suave); color: var(--rojo); }
+.tipo-entrega { background: var(--ambar-suave); color: var(--ambar); }
+.tipo-exposición { background: #F3E8FF; color: #9333EA; }
+.tipo-estudio { background: var(--primario-suave); color: var(--primario); }
+.tipo-otro { background: #F3F4F6; color: var(--suave); }
+
+.rec-titulo { font-size: .86rem; font-weight: 600; color: var(--tinta); }
+.rec-meta { display: flex; flex-wrap: wrap; gap: .1rem .45rem; font-size: .74rem; color: var(--suave); }
+.rec-cuando { font-weight: 600; color: var(--primario); }
+.rec-item.urgente .rec-cuando { color: var(--rojo); }
+.rec-item.vencido .rec-cuando { color: var(--muy-suave); }
+
+.rec-acciones { display: flex; gap: .15rem; flex-shrink: 0; }
+.rec-acciones a, .rec-acciones button {
+    width: 28px; height: 28px; border-radius: 7px; border: 0; background: none;
+    display: grid; place-items: center; color: var(--muy-suave); font-size: .85rem; text-decoration: none;
+}
+.rec-acciones a:hover { background: var(--primario-suave); color: var(--primario); }
+.rec-acciones a.sincronizado { color: #1A73E8; }
+.rec-acciones button:hover { background: var(--rojo-suave); color: var(--rojo); }
+
+.rec-vacio { text-align: center; padding: 1.2rem .5rem; color: var(--suave); }
+.rec-vacio .bi { font-size: 1.8rem; color: var(--primario-borde); display: block; margin-bottom: .3rem; }
+
+.rec-google {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .8rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--borde);
+}
+
+.rec-modal { border: 0; border-radius: 16px; }
+.rec-tipos { display: flex; flex-wrap: wrap; gap: .4rem; }
+.rec-tipos input { position: absolute; opacity: 0; pointer-events: none; }
+.rec-tipos label {
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    padding: .35rem .75rem;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--suave);
+    cursor: pointer;
+}
+.rec-tipos input:checked + label { background: var(--primario); border-color: var(--primario); color: #fff; }
+.rec-tipos input:focus-visible + label { outline: 3px solid var(--primario-borde); }
+

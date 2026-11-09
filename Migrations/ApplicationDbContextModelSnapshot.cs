@@ -250,6 +250,27 @@ namespace PlataformaCursos.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("PlataformaCursos.Models.ConexionGoogle", b =>
+                {
+                    b.Property<string>("UsuarioId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Correo")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("FechaConexion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RefreshTokenCifrado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UsuarioId");
+
+                    b.ToTable("ConexionesGoogle");
+                });
+
             modelBuilder.Entity("PlataformaCursos.Models.Curso", b =>
                 {
                     b.Property<int>("Id")
@@ -410,6 +431,67 @@ namespace PlataformaCursos.Migrations
                         .IsUnique();
 
                     b.ToTable("InscripcionesTaller");
+                });
+
+            modelBuilder.Entity("PlataformaCursos.Models.Recordatorio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AvisoMinutosAntes")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Completado")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("CursoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DuracionMinutos")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GoogleEventId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("GoogleEventUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Notas")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("UsuarioId", "Fecha");
+
+                    b.ToTable("Recordatorios");
                 });
 
             modelBuilder.Entity("PlataformaCursos.Models.ResultadoQuiz", b =>
@@ -591,6 +673,17 @@ namespace PlataformaCursos.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PlataformaCursos.Models.ConexionGoogle", b =>
+                {
+                    b.HasOne("PlataformaCursos.Models.ApplicationUser", "Usuario")
+                        .WithOne()
+                        .HasForeignKey("PlataformaCursos.Models.ConexionGoogle", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("PlataformaCursos.Models.Curso", b =>
                 {
                     b.HasOne("PlataformaCursos.Models.ApplicationUser", "Propietario")
@@ -646,6 +739,24 @@ namespace PlataformaCursos.Migrations
                         .IsRequired();
 
                     b.Navigation("Taller");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("PlataformaCursos.Models.Recordatorio", b =>
+                {
+                    b.HasOne("PlataformaCursos.Models.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PlataformaCursos.Models.ApplicationUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
 
                     b.Navigation("Usuario");
                 });

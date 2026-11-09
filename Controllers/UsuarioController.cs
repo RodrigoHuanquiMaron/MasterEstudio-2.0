@@ -17,15 +17,17 @@ public class UsuarioController : Controller
     private readonly CacheService _cache;
     private readonly SentimientoService _sentimiento;
     private readonly GroqService _groq;
+    private readonly GoogleCalendarService _google;
 
     public UsuarioController(ApplicationDbContext db, UserManager<ApplicationUser> userManager,
-        CacheService cache, SentimientoService sentimiento, GroqService groq)
+        CacheService cache, SentimientoService sentimiento, GroqService groq, GoogleCalendarService google)
     {
         _db = db;
         _userManager = userManager;
         _cache = cache;
         _sentimiento = sentimiento;
         _groq = groq;
+        _google = google;
     }
 
     private string UsuarioId => _userManager.GetUserId(User)!;
@@ -207,9 +209,33 @@ public class UsuarioController : Controller
             CursosDisponibles = catalogo.Where(c => !idsInscritos.Contains(c.Id)).ToList(),
             HorasPorDia = horasPorDia.Select(h => Math.Round(h, 2)).ToArray(),
             IndiceHoy = (int)(DateTime.Now.Date - inicioSemana).TotalDays,
-            Actividades = actividades.OrderByDescending(a => a.Fecha).Take(5).ToList()
+            Actividades = actividades.OrderByDescending(a => a.Fecha).Take(5).ToList(),
+            Recordatorios = await RecordatoriosAsync(id)
         };
         return View(model);
+    }
+
+    // Próximos recordatorios del alumno y estado de su conexión con Google Calendar
+    private async Task<RecordatoriosPanelViewModel> RecordatoriosAsync(string usuarioId)
+    {
+        var ahora = DateTime.UtcNow;
+        var conexion = await _db.ConexionesGoogle.AsNoTracking().FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+
+        return new RecordatoriosPanelViewModel
+        {
+            // Pendientes futuros + los de las últimas 12 horas, y los completados de hoy
+            Proximos = await _db.Recordatorios
+                .AsNoTracking()
+                .Include(r => r.Curso)
+                .Where(r => r.UsuarioId == usuarioId && r.Fecha >= ahora.AddHours(-12))
+                .OrderBy(r => r.Completado).ThenBy(r => r.Fecha)
+                .Take(8)
+                .ToListAsync(),
+            Vencidos = await _db.Recordatorios.CountAsync(r => r.UsuarioId == usuarioId && !r.Completado && r.Fecha < ahora.AddHours(-12)),
+            GoogleDisponible = _google.Disponible,
+            GoogleConectado = conexion is not null,
+            GoogleCorreo = conexion?.Correo
+        };
     }
 
     [HttpPost]

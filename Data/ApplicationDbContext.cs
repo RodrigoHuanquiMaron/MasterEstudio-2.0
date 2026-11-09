@@ -16,6 +16,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<Taller> Talleres => Set<Taller>();
     public DbSet<InscripcionTaller> InscripcionesTaller => Set<InscripcionTaller>();
     public DbSet<ResultadoQuiz> ResultadosQuiz => Set<ResultadoQuiz>();
+    public DbSet<Recordatorio> Recordatorios => Set<Recordatorio>();
+    public DbSet<ConexionGoogle> ConexionesGoogle => Set<ConexionGoogle>();
 
     // Llaves que cifran las cookies (así sobreviven a cada despliegue en Render)
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -109,5 +111,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
 
         builder.Entity<ResultadoQuiz>()
             .HasIndex(r => new { r.UsuarioId, r.Fecha });
+
+        // ----- Recordatorios y Google Calendar -----
+        builder.Entity<Recordatorio>()
+            .HasOne(r => r.Usuario)
+            .WithMany()
+            .HasForeignKey(r => r.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Recordatorio>()
+            .HasOne(r => r.Curso)
+            .WithMany()
+            .HasForeignKey(r => r.CursoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Recordatorio>()
+            .HasIndex(r => new { r.UsuarioId, r.Fecha });
+
+        builder.Entity<ConexionGoogle>()
+            .HasOne(c => c.Usuario)
+            .WithOne()
+            .HasForeignKey<ConexionGoogle>(c => c.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

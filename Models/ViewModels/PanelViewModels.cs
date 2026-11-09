@@ -29,6 +29,8 @@ public class PanelUsuarioViewModel
     public int IndiceHoy { get; set; }
 
     public List<ActividadViewModel> Actividades { get; set; } = new();
+
+    public RecordatoriosPanelViewModel Recordatorios { get; set; } = new();
 }
 
 public class MisCursosViewModel
